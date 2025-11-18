@@ -31,17 +31,13 @@ namespace MedMania.Presentation.Views.Procedures
         private System.IDisposable _activeRun;
         private Patients.PatientView _activePatient;
         private IProcedureDef _activeProcedure;
-        private float _activeDuration;
-        private float _activeStartTime;
-        private bool _isRunning;
         private IProcedurePerformer _performer;
         private EquipmentView _activeEquipmentView;
         private IEquipmentDef _activeEquipmentDef;
         private Transform _activeInteractionAnchor;
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private static bool s_GcAllocationLogged;
-#endif
+        private ProcedureProgressTracker _progressTracker;
+        private ProcedureTargetResolver _targetResolver;
+        private ProcedureRunEvents _events;
 
         public UnityEvent<IProcedureDef> onStarted => _onStarted;
         public UnityEvent<float> onProgress => _onProgress;
@@ -56,6 +52,10 @@ namespace MedMania.Presentation.Views.Procedures
 
         private void Awake()
         {
+            _progressTracker = new ProcedureProgressTracker();
+            _targetResolver = new ProcedureTargetResolver(transform, _range);
+            _events = new ProcedureRunEvents(_onStarted, _onProgress, _onCompleted, _onPatientStarted, _onPatientProgress, _onPatientCompleted, _onDomainPatientCompleted, _onPatientReset, _onInteractionAnchorResolved);
+
             if (_performerSource == null)
             {
                 _performer = GetComponentInParent<IProcedurePerformer>();
@@ -74,6 +74,8 @@ namespace MedMania.Presentation.Views.Procedures
 
         private void OnEnable()
         {
+            _targetResolver.UpdateRange(_range);
+
             if (!ServiceLocator.TryGet(out _timer))
             {
                 Debug.LogWarning($"Unable to resolve {nameof(GameTimerService)} for {nameof(ProcedureRunner)}.", this);
@@ -132,15 +134,17 @@ namespace MedMania.Presentation.Views.Procedures
                 return;
             }
 
-            if (!TryResolvePatient(procedure, out var patient))
+            if (!_targetResolver.TryResolve(procedure, out var patient, out var equipmentView, out var equipmentDef, out var interactionAnchor))
             {
                 return;
             }
 
             _activePatient = patient;
             _activeProcedure = procedure;
-            _activeDuration = Mathf.Max(0f, procedure.DurationSeconds);
-            _activeStartTime = Time.time;
+            _activeEquipmentView = equipmentView;
+            _activeEquipmentDef = equipmentDef;
+            _activeInteractionAnchor = interactionAnchor;
+            _progressTracker.Begin(procedure.DurationSeconds);
 
             var run = ProcedureRun.TryRun(patient.Domain, procedure, this,
                 onBegan: () => HandleRunStarted(procedure),
@@ -165,136 +169,35 @@ namespace MedMania.Presentation.Views.Procedures
                 return;
             }
 
-            if (_activeEquipmentView != null)
+            if (!_targetResolver.IsTargetStillValid(_activePatient, _activeEquipmentView, _activeEquipmentDef, out var anchor))
             {
-                if (_activeEquipmentView.Equipment != _activeEquipmentDef)
-                {
-                    CancelActiveRun();
-                    return;
-                }
-
-                if (!_activeEquipmentView.TryGetPatient(out var occupant) || occupant != _activePatient)
-                {
-                    CancelActiveRun();
-                    return;
-                }
-
-                var anchor = _activeEquipmentView.InteractionAnchor;
-                if (Vector3.Distance(transform.position, anchor.position) > _range)
-                {
-                    CancelActiveRun();
-                    return;
-                }
-            }
-            else
-            {
-                if (_activePatient == null)
-                {
-                    CancelActiveRun();
-                    return;
-                }
-
-                if (Vector3.Distance(transform.position, _activePatient.transform.position) > _range)
-                {
-                    CancelActiveRun();
-                    return;
-                }
+                CancelActiveRun();
+                return;
             }
 
-            if (_isRunning && _activeDuration > 0f)
+            _activeInteractionAnchor = anchor;
+
+            if (_progressTracker.IsRunning && _progressTracker.HasDuration)
             {
-                var elapsed = Mathf.Max(0f, Time.time - _activeStartTime);
-                var progress = Mathf.Clamp01(elapsed / _activeDuration);
-                _onProgress?.Invoke(progress);
-                if (_activePatient != null)
-                {
-                    _onPatientProgress?.Invoke(_activePatient, progress);
-                }
+                var progress = _progressTracker.GetProgress();
+                _events.NotifyProgress(progress, _activePatient);
             }
-        }
-
-        private Patients.PatientView FindClosestPatient()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long allocationBefore = System.GC.GetAllocatedBytesForCurrentThread();
-#endif
-
-            var patients = Patients.PatientView.Active;
-            Patients.PatientView best = null; float bestDist = float.MaxValue;
-            for (int i = 0; i < patients.Count; i++)
-            {
-                var p = patients[i];
-                if (p == null)
-                {
-                    continue;
-                }
-
-                float d = Vector3.Distance(transform.position, p.transform.position);
-                if (d < bestDist && d <= _range)
-                {
-                    best = p;
-                    bestDist = d;
-                }
-            }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!s_GcAllocationLogged)
-            {
-                s_GcAllocationLogged = true;
-                long allocationAfter = System.GC.GetAllocatedBytesForCurrentThread();
-                long delta = allocationAfter - allocationBefore;
-
-                if (delta != 0)
-                {
-                    Debug.LogWarning($"{nameof(ProcedureRunner)}.{nameof(FindClosestPatient)} allocated {delta} bytes on first measurement. Cached registry should allow zero-allocation lookups.", this);
-                }
-                else
-                {
-                    Debug.Log($"{nameof(ProcedureRunner)}.{nameof(FindClosestPatient)} allocation delta: {delta} bytes after switching to the cached registry.", this);
-                }
-            }
-#endif
-
-            return best;
         }
 
         private void HandleRunStarted(IProcedureDef procedure)
         {
-            _isRunning = true;
-            var initialProgress = _activeDuration <= 0f ? 1f : 0f;
+            var initialProgress = _progressTracker.InitialProgress;
             var patient = _activePatient;
 
-            _onProgress?.Invoke(initialProgress);
-            if (patient != null)
-            {
-                _onPatientProgress?.Invoke(patient, initialProgress);
-                _onPatientStarted?.Invoke(patient, procedure);
-            }
-
-            _onInteractionAnchorResolved?.Invoke(_activeInteractionAnchor);
-            _onStarted?.Invoke(procedure);
+            _events.NotifyStarted(procedure, initialProgress, patient, _activeInteractionAnchor);
         }
 
         private void HandleRunCompleted(IProcedureDef procedure)
         {
-            _isRunning = false;
             var patient = _activePatient;
 
-            _onProgress?.Invoke(1f);
-            if (patient != null)
-            {
-                _onPatientProgress?.Invoke(patient, 1f);
-                _onPatientCompleted?.Invoke(patient, procedure);
-
-                var domainPatient = patient.Domain;
-                if (domainPatient != null)
-                {
-                    _onDomainPatientCompleted?.Invoke(domainPatient, procedure);
-                }
-            }
-
-            _onCompleted?.Invoke(procedure);
-            _onInteractionAnchorResolved?.Invoke(null);
+            _events.NotifyCompleted(procedure, patient);
+            _events.ClearInteractionAnchor();
             ResetActiveRunState();
         }
 
@@ -306,13 +209,10 @@ namespace MedMania.Presentation.Views.Procedures
             if (run != null)
             {
                 run.Dispose();
-                if (patient != null)
-                {
-                    _onPatientReset?.Invoke(patient);
-                }
+                _events.NotifyReset(patient);
             }
 
-            _onInteractionAnchorResolved?.Invoke(null);
+            _events.ClearInteractionAnchor();
             ResetActiveRunState();
         }
 
@@ -321,90 +221,10 @@ namespace MedMania.Presentation.Views.Procedures
             _activeRun = null;
             _activePatient = null;
             _activeProcedure = null;
-            _activeDuration = 0f;
-            _activeStartTime = 0f;
-            _isRunning = false;
             _activeEquipmentView = null;
             _activeEquipmentDef = null;
             _activeInteractionAnchor = null;
-        }
-
-        private bool TryResolvePatient(IProcedureDef procedure, out Patients.PatientView patient)
-        {
-            patient = null;
-
-            if (procedure == null)
-            {
-                return false;
-            }
-
-            var requiredEquipment = procedure.RequiredEquipment;
-            if (requiredEquipment != null)
-            {
-                EquipmentView bestView = null;
-                IEquipmentDef bestDef = null;
-                Patients.PatientView bestPatient = null;
-                float bestDistance = float.MaxValue;
-
-                var equipmentViews = EquipmentView.Active;
-                for (int i = 0; i < equipmentViews.Count; i++)
-                {
-                    var view = equipmentViews[i];
-                    if (view == null)
-                    {
-                        continue;
-                    }
-
-                    var equipmentDef = view.Equipment;
-                    if (equipmentDef == null || equipmentDef != requiredEquipment)
-                    {
-                        continue;
-                    }
-
-                    if (!view.TryGetPatient(out var occupant) || occupant == null)
-                    {
-                        continue;
-                    }
-
-                    var anchor = view.InteractionAnchor != null ? view.InteractionAnchor : view.transform;
-                    float distance = Vector3.Distance(transform.position, anchor.position);
-                    if (distance > _range)
-                    {
-                        continue;
-                    }
-
-                    if (distance < bestDistance)
-                    {
-                        bestDistance = distance;
-                        bestPatient = occupant;
-                        bestView = view;
-                        bestDef = equipmentDef;
-                    }
-                }
-
-                if (bestPatient == null)
-                {
-                    _activeEquipmentView = null;
-                    _activeEquipmentDef = null;
-                    _activeInteractionAnchor = null;
-                    return false;
-                }
-
-                patient = bestPatient;
-                _activeEquipmentView = bestView;
-                _activeEquipmentDef = bestDef;
-                _activeInteractionAnchor = bestView != null && bestView.InteractionAnchor != null
-                    ? bestView.InteractionAnchor
-                    : bestView != null ? bestView.transform : null;
-                return true;
-            }
-
-            _activeEquipmentView = null;
-            _activeEquipmentDef = null;
-
-            patient = FindClosestPatient();
-            _activeInteractionAnchor = patient != null ? patient.transform : null;
-            return patient != null;
+            _progressTracker.Stop();
         }
     }
 }
