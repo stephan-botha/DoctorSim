@@ -2,7 +2,8 @@
     "name": "MedMania.Presentation.Input",
     "rootNamespace": "MedMania.Presentation.Input",
     "references": [
-        "MedMania.Core.Domain"
+        "MedMania.Core.Domain",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

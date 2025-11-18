@@ -439,7 +439,7 @@ namespace MedMania.Presentation.Input.Staff
 
                 if (_slotHighlightInstance == null)
                 {
-                    _slotHighlightInstance = Object.Instantiate(_slotHighlightPrefab);
+                    _slotHighlightInstance = GameObject.Instantiate(_slotHighlightPrefab);
                 }
 
                 if (_slotHighlightInstance == null)
@@ -477,11 +477,11 @@ namespace MedMania.Presentation.Input.Staff
 
                 if (Application.isPlaying)
                 {
-                    Object.Destroy(_slotHighlightInstance);
+                    GameObject.Destroy(_slotHighlightInstance);
                 }
                 else
                 {
-                    Object.DestroyImmediate(_slotHighlightInstance);
+                    GameObject.DestroyImmediate(_slotHighlightInstance);
                 }
 
                 _slotHighlightInstance = null;
