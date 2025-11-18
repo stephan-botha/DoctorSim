@@ -1,14 +1,15 @@
 // MedMania.Presentation.Input
 // StaffAgent.cs
-// Responsibility: WASD movement + Space (pick/drop) + Ctrl (perform)
+// Responsibility: handle staff interaction inputs (carry/perform) and slot highlighting
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 using MedMania.Core.Domain.Inventory;
 using MedMania.Core.Domain.Procedures;
-using InputAPI = UnityEngine.Input;
 
 namespace MedMania.Presentation.Input.Staff
 {
@@ -22,11 +23,15 @@ namespace MedMania.Presentation.Input.Staff
         [SerializeField] private Animator _animator;
         [SerializeField] private string _speedParam = "Speed";
         [SerializeField] private string _carryingParam = "Carrying";
+        [SerializeField] private InputActionReference _moveAction;
+        [SerializeField] private InputActionReference _carryAction;
+        [SerializeField] private InputActionReference _performAction;
+        [SerializeField, FormerlySerializedAs("_slotHighlightPrefab")] private GameObject _slotHighlightPrefab;
         [NonSerialized] private IProcedureDef _heldProcedure;
         [SerializeField, Tooltip("Runtime debug view of the currently held procedure.")]
         private UnityEngine.Object _heldProcedureDebug;
         [SerializeField] private UnityEvent<IProcedureDef> _performRequested = new();
-        [SerializeField] private GameObject _slotHighlightPrefab;
+        [SerializeField] private SlotHighlightController _slotHighlight = new();
 
         private readonly Collider[] _overlapBuffer = new Collider[16];
         private readonly List<ICarrySlot> _nearbySlots = new();
@@ -36,7 +41,6 @@ namespace MedMania.Presentation.Input.Staff
         private int _speedParamId;
         private int _carryingParamId;
         private event System.Action<IProcedureDef> _performRequestedHandlers;
-        private GameObject _slotHighlightInstance;
         private ICarrySlot _focusedSlot;
         private IProcedureStation _cachedStation;
 
@@ -67,25 +71,15 @@ namespace MedMania.Presentation.Input.Staff
             _speedParamId = string.IsNullOrEmpty(_speedParam) ? -1 : Animator.StringToHash(_speedParam);
             _carryingParamId = string.IsNullOrEmpty(_carryingParam) ? -1 : Animator.StringToHash(_carryingParam);
 
+            _slotHighlight.SetPrefab(_slotHighlightPrefab);
+
             UpdateHeldProcedure();
             UpdateAnimator();
         }
 
         private void Update()
         {
-            var input = new Vector2(InputAPI.GetAxisRaw("Horizontal"), InputAPI.GetAxisRaw("Vertical"));
-            _move = new Vector3(input.x, 0f, input.y).normalized;
-
-            if (InputAPI.GetKeyDown(KeyCode.Space))
-            {
-                HandleCarryToggle();
-            }
-
-            if (InputAPI.GetKeyDown(KeyCode.LeftControl))
-            {
-                _performRequested?.Invoke(_heldProcedure);
-                _performRequestedHandlers?.Invoke(_heldProcedure);
-            }
+            _move = ReadMoveInput();
 
             RefreshFocusedSlot();
             UpdateHeldProcedure();
@@ -95,6 +89,29 @@ namespace MedMania.Presentation.Input.Staff
         private void FixedUpdate()
         {
             //if (_rb) _rb.MovePosition(_rb.position + _move * _speed * Time.fixedDeltaTime);
+        }
+
+        private void OnValidate()
+        {
+            _slotHighlight.SetPrefab(_slotHighlightPrefab);
+        }
+
+        private void OnEnable()
+        {
+            BindInput(_carryAction, OnCarryPerformed);
+            BindInput(_performAction, OnPerformRequested);
+            EnableAction(_moveAction);
+        }
+
+        private void OnDisable()
+        {
+            _focusedSlot = null;
+            _slotHighlight.Clear();
+            UnbindInput(_carryAction, OnCarryPerformed);
+            UnbindInput(_performAction, OnPerformRequested);
+            DisableAction(_moveAction);
+            DisableAction(_carryAction);
+            DisableAction(_performAction);
         }
 
         private ICarrySlot ResolveSlot(Component component)
@@ -158,51 +175,7 @@ namespace MedMania.Presentation.Input.Staff
                 _focusedSlot = best;
             }
 
-            ApplySlotHighlight(_focusedSlot);
-        }
-
-        private void ApplySlotHighlight(ICarrySlot slot)
-        {
-            if (slot == null)
-            {
-                if (_slotHighlightInstance != null && _slotHighlightInstance.activeSelf)
-                {
-                    _slotHighlightInstance.SetActive(false);
-                }
-
-                return;
-            }
-
-            if (_slotHighlightPrefab == null)
-            {
-                return;
-            }
-
-            if (_slotHighlightInstance == null)
-            {
-                _slotHighlightInstance = Instantiate(_slotHighlightPrefab);
-            }
-
-            if (_slotHighlightInstance == null)
-            {
-                return;
-            }
-
-            var highlightTransform = _slotHighlightInstance.transform;
-
-            var slotTransform = slot.Transform;
-
-            if (highlightTransform.parent != slotTransform)
-            {
-                highlightTransform.SetParent(slotTransform, false);
-            }
-
-            highlightTransform.localPosition = Vector3.zero;
-
-            if (!_slotHighlightInstance.activeSelf)
-            {
-                _slotHighlightInstance.SetActive(true);
-            }
+            _slotHighlight.Apply(_focusedSlot);
         }
 
         private ICarrySlot FindBestSlot()
@@ -362,26 +335,161 @@ namespace MedMania.Presentation.Input.Staff
             }
         }
 
-        private void OnDisable()
-        {
-            _focusedSlot = null;
-            ApplySlotHighlight(null);
-        }
-
         private void OnDestroy()
         {
-            if (_slotHighlightInstance != null)
+            _slotHighlight.Dispose();
+        }
+
+        private void OnPerformRequested(InputAction.CallbackContext _)
+        {
+            _performRequested?.Invoke(_heldProcedure);
+            _performRequestedHandlers?.Invoke(_heldProcedure);
+        }
+
+        private void OnCarryPerformed(InputAction.CallbackContext _)
+        {
+            HandleCarryToggle();
+        }
+
+        private void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
+        {
+            if (actionRef == null || callback == null)
             {
+                return;
+            }
+
+            var action = actionRef.action;
+            if (action == null)
+            {
+                return;
+            }
+
+            action.performed += callback;
+            EnableAction(actionRef);
+        }
+
+        private void UnbindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
+        {
+            if (actionRef == null || callback == null)
+            {
+                return;
+            }
+
+            var action = actionRef.action;
+            if (action == null)
+            {
+                return;
+            }
+
+            action.performed -= callback;
+        }
+
+        private static void EnableAction(InputActionReference actionRef)
+        {
+            var action = actionRef != null ? actionRef.action : null;
+            if (action != null && !action.enabled)
+            {
+                action.Enable();
+            }
+        }
+
+        private static void DisableAction(InputActionReference actionRef)
+        {
+            var action = actionRef != null ? actionRef.action : null;
+            if (action != null && action.enabled)
+            {
+                action.Disable();
+            }
+        }
+
+        private Vector3 ReadMoveInput()
+        {
+            var action = _moveAction != null ? _moveAction.action : null;
+            if (action == null)
+            {
+                return Vector3.zero;
+            }
+
+            var input = action.ReadValue<Vector2>();
+            return new Vector3(input.x, 0f, input.y).normalized;
+        }
+
+        [Serializable]
+        private sealed class SlotHighlightController
+        {
+            [SerializeField] private GameObject _slotHighlightPrefab;
+            private GameObject _slotHighlightInstance;
+
+            public void Apply(ICarrySlot slot)
+            {
+                if (slot == null)
+                {
+                    if (_slotHighlightInstance != null && _slotHighlightInstance.activeSelf)
+                    {
+                        _slotHighlightInstance.SetActive(false);
+                    }
+
+                    return;
+                }
+
+                if (_slotHighlightPrefab == null)
+                {
+                    return;
+                }
+
+                if (_slotHighlightInstance == null)
+                {
+                    _slotHighlightInstance = Object.Instantiate(_slotHighlightPrefab);
+                }
+
+                if (_slotHighlightInstance == null)
+                {
+                    return;
+                }
+
+                var highlightTransform = _slotHighlightInstance.transform;
+                var slotTransform = slot.Transform;
+
+                if (highlightTransform.parent != slotTransform)
+                {
+                    highlightTransform.SetParent(slotTransform, false);
+                }
+
+                highlightTransform.localPosition = Vector3.zero;
+
+                if (!_slotHighlightInstance.activeSelf)
+                {
+                    _slotHighlightInstance.SetActive(true);
+                }
+            }
+
+            public void Clear()
+            {
+                Apply(null);
+            }
+
+            public void Dispose()
+            {
+                if (_slotHighlightInstance == null)
+                {
+                    return;
+                }
+
                 if (Application.isPlaying)
                 {
-                    Destroy(_slotHighlightInstance);
+                    Object.Destroy(_slotHighlightInstance);
                 }
                 else
                 {
-                    DestroyImmediate(_slotHighlightInstance);
+                    Object.DestroyImmediate(_slotHighlightInstance);
                 }
 
                 _slotHighlightInstance = null;
+            }
+
+            public void SetPrefab(GameObject prefab)
+            {
+                _slotHighlightPrefab = prefab;
             }
         }
     }
