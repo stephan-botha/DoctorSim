@@ -74,7 +74,10 @@ namespace MedMania.Presentation.Views.Procedures
 
         private void OnEnable()
         {
-            _timer = ServiceLocator.Find<GameTimerService>();
+            if (!ServiceLocator.TryGet(out _timer))
+            {
+                Debug.LogWarning($"Unable to resolve {nameof(GameTimerService)} for {nameof(ProcedureRunner)}.", this);
+            }
 
             if (_performer == null && _performerSource == null)
             {
@@ -100,9 +103,12 @@ namespace MedMania.Presentation.Views.Procedures
 
         public System.IDisposable Schedule(System.TimeSpan duration, System.Action onCompleted, System.Threading.CancellationToken _ = default)
         {
+            ServiceLocator.TryGet(out _timer);
+
             if (_timer == null)
             {
-                _timer = ServiceLocator.Find<GameTimerService>();
+                Debug.LogWarning($"Cannot schedule procedure run because {nameof(GameTimerService)} is unavailable.", this);
+                return null;
             }
 
             return _timer.Schedule((float)duration.TotalSeconds, onCompleted);
