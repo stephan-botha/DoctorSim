@@ -94,7 +94,7 @@ namespace MedMania.Presentation.Input.Staff
 
         private void FixedUpdate()
         {
-            if (_rb) _rb.MovePosition(_rb.position + _move * _speed * Time.fixedDeltaTime);
+            //if (_rb) _rb.MovePosition(_rb.position + _move * _speed * Time.fixedDeltaTime);
         }
 
         private ICarrySlot ResolveSlot(Component component)
