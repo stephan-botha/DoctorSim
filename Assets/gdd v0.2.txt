@@ -1,0 +1,314 @@
+DoctorSim – Game Design Document (v0.2)
+A first-person comedic medical mastery simulator with dangling tools, tactile minigames, and hospital sandbox chaos.
+________________________________________
+1. High-Level Concept
+DoctorSim is a first-person medical comedy simulator where the player—an overwhelmed new intern—roams a living hospital ecosystem responding to pager calls, diagnosing patients, performing tests and treatments via quirky tactile minigames, and gradually rising through the medical ranks.
+Unlike traditional hospital management sims, DoctorSim is embodied and hands-on.
+You walk the halls.
+You push the wheelchairs.
+You wield dangling tools that jiggle with every step.
+You perform absurdly simplified medical procedures that somehow work.
+The core fantasy:
+Become a legendary doctor… by surviving your own incompetence.
+________________________________________
+2. Player Fantasy
+The emotional arc is “Intern → Icon.”
+Players start as a clueless day-one doctor armed with a trembling thermometer and raw enthusiasm. Through chaotic consults, clumsy tests, successful treatments, and comedic mastery of medical tools, they rise through:
+Intern → Resident → Registrar → Consultant → Attending → Professor
+By the end, they are the hospital’s mythic hero—summoned for bizarre medical mysteries, prestigious cases, and ridiculous “grand rounds.”
+The tone is warm, silly, and uplifting—not grim or realistic.
+________________________________________
+3. Audience
+•	Fans of Job Simulator, Surgeon Simulator, and Schedule I
+•	Cozy chaos gamers
+•	Streamers looking for “panic comedy”
+•	People curious about medicine in a low-stress format
+•	Ages 12+
+Players who enjoy physical comedy, tactile minigames, progression systems, and a sandbox environment will feel right at home.
+________________________________________
+4. Core Gameplay Overview
+DoctorSim plays like a first-person “hospital town” game:
+1.	Receive pager call
+2.	Navigate the hospital (ED → Cardiology → Radiology → etc.)
+3.	Interact with a patient
+4.	Perform tests via tactile minigames
+5.	Diagnosis made automatically (or manually in advanced rank)
+6.	Administer treatments
+7.	Discharge patient → earn money + XP
+8.	Buy new equipment / unlock new tools
+9.	Rank up → access new departments and complex cases
+Movement, tools, minigames, and physical interactions are the heart of the experience.
+________________________________________
+5. Core Loop
+1. Page → Go → Diagnose
+Pager notifies you:
+“Consult needed — Bed 3, chest tightness.”
+You walk/run/wheelchair-drift there.
+2. Perform Tests
+Hover crosshair over patient → card shows required tests.
+Select tool → press E → minigame begins.
+3. Diagnosis
+After all tests:
+•	Diagnosis appears
+•	Treatments unlock
+•	Pager may give instructions if it’s urgent
+4. Perform Treatments
+Each treatment is its own tactile interaction.
+5. Discharge & Reward
+Patient thanks you (or gives side-eye).
+You gain:
+•	Money (for tools/equipment)
+•	XP (for rank progression)
+6. Progression
+Unlock:
+•	new departments
+•	more complex diseases
+•	advanced tools
+•	prestige ranks
+Repeat.
+The loop is snack-sized and endlessly repeatable.
+________________________________________
+6. Movement & Controls
+FPS Control Scheme
+•	WASD: Move
+•	Mouse: Look
+•	E: Interact
+•	1–5: Tool selection
+•	Space: Confirm / special use
+•	Shift: Sprint (slightly clumsy)
+Wheelchair (Vehicle Mode)
+•	Acquire wheelchair → player “holds” it as the equipped tool
+•	Use it to transport patients to equipment stations
+•	It controls like a lightweight, slightly drifty cart
+________________________________________
+7. The Dangling Tool System
+The signature visual mechanic:
+No hands. Only tools.
+Tools float/hang in front of the camera with:
+•	idle sway
+•	bobbing when walking
+•	comedic jiggle on collisions
+•	wobble when misused
+This creates tactile comedy and removes animation complexity.
+Each tool has:
+•	activation zone
+•	minigame behavior
+•	sound FX
+•	success state
+________________________________________
+8. Minigame System
+Minigames use three universal archetypes, allowing dozens of tools without reinventing the wheel.
+A) Hold-in-Zone
+Thermometer, Eye Light, Pulse-ox, Ultrasound probe
+•	Keep tool inside wobbling zone
+•	Timer fills
+•	Patient reactions try to disrupt
+B) Follow Shape / Rhythm
+Stethoscope, EKG wand
+•	Keep tool aligned with moving outline
+•	Or press rhythmically in sync with heartbeat sounds
+C) Timing / Charge-and-Release
+Reflex hammer, sprays, IV injector, defibrillator
+•	Time a click
+•	Or charge and release at correct moment
+•	Or multi-tap sequence
+This framework is scalable for a solo dev.
+________________________________________
+9. Tools
+Basic Tools (Intern – Resident)
+•	Thermometer
+•	Stethoscope
+•	Reflex Hammer
+•	Eye Light
+•	Spray Bottle (antihistamine/antipyretic)
+•	Pulse Oximeter
+Intermediate Tools (Registrar – Consultant)
+•	Full EKG Wand
+•	Advanced IV Injector
+•	Nebulizer
+•	Portable Ultrasound
+•	Defib Paddles
+Advanced Tools (Attending – Professor)
+•	CT Scanner
+•	MRI
+•	Specialist ultrasound probes
+•	Multi-step diagnostic kits
+________________________________________
+10. Patients
+Patients are expressive caricatures with:
+•	animate symptoms (shivering, coughing, wheezing, blinking)
+•	humor reactions (“Is this part of the protocol?”)
+•	vital bar (mild decay)
+•	test card (shows tests → treatments)
+•	mood (affects XP bonus)
+They are never gory or realistic—always stylized.
+________________________________________
+11. Conditions (Diseases)
+Conditions are data-driven cards requiring 1–4 steps.
+Early:
+Fever, flu, cold, sore throat, mild allergy, simple anxiety
+Mid:
+Chest discomfort, hypoxia, pneumonia-lite, palpitations, migraines
+Late:
+Complex arrhythmias, stroke mimics (stylized), neuro weirdness, rare VIP cases
+Endgame:
+Absurd fictional syndromes (“Infinite Hiccups”, “Wobble Fever”)
+________________________________________
+12. Hospital Environment (The “Town”)
+A connected, walkable 3D hospital with:
+•	ED (starting zone)
+•	General Medicine
+•	Short Stay / Observation
+•	Cardiology
+•	Radiology (CT/MRI)
+•	Neurology
+•	Advanced Diagnostics
+•	VIP Wing
+•	Equipment Shop
+The player roams freely.
+Hallway signs guide navigation.
+NPC staff wander in comedic loops.
+________________________________________
+13. Progression & Rank System
+DoctorSim uses a dual progression system:
+________________________________________
+A) Money
+Earned per patient.
+Used to buy:
+•	new tools
+•	advanced equipment stations
+•	department upgrades
+•	cosmetic office items
+________________________________________
+B) XP → Rank Ups
+XP unlocks permissions:
+Intern → Resident → Registrar → Consultant → Attending → Professor
+Each rank unlocks:
+•	new departments
+•	new conditions
+•	new test & treatment tools
+•	cosmetic perks
+•	higher-tier pager missions
+•	authority to operate sophisticated stations (CT, MRI)
+________________________________________
+14. The Progression Arc (Summary)
+Intern
+Basic tools
+Simple conditions
+ED + Gen Med
+Resident
+O2, IV
+Short Stay
+Moderate conditions
+Registrar
+EKG, ultrasound
+Cardiology
+Rhythm/timing minigames
+Consultant
+Defib, CT
+Radiology + Neurology
+Complex diagnostic chains
+Attending
+MRI + advanced probes
+Advanced Diagnostics
+Rare diseases
+Professor
+Everything unlocked
+Research Wing
+Weird medical mysteries
+Endless mode
+________________________________________
+15. Economy
+Money Sources
+•	patient consults
+•	multi-step case bonuses
+•	VIP cases
+•	daily hospital shift bonus
+Expenses
+•	tools
+•	equipment stations
+•	upgrades (O2 rigs, CT machine, MRI, etc.)
+•	staff shortcuts (optional automation)
+Economy remains light and accessible.
+________________________________________
+16. Failure States
+Failure is comedic, not tragic.
+If vitals hit zero:
+•	patient sighs dramatically
+•	ghost emoji floats upward
+•	bed lights flash
+•	supervisor clipboard appears with ✖ marks
+No gore, no trauma.
+________________________________________
+17. Tone & Aesthetic
+Bright, playful, slightly absurd.
+Inspirations:
+•	Two Point Hospital
+•	Job Simulator
+•	Overcooked
+•	Schedule I (world structure)
+Lighting and colors are soft and friendly.
+Everything wiggles as if the hospital is held together by coffee and tape.
+________________________________________
+18. Audio Direction
+Warm, tactile, comedic:
+•	plastic tool rattles
+•	soft “boops” and “dings”
+•	pager chirps
+•	patient reactions (“Ow? …should that happen?”)
+•	defib “charging…” sound escalating dramatically
+________________________________________
+19. UI / UX
+Diegetic Elements
+•	floating patient test cards
+•	tooltips above body parts
+•	vitals shown on bedside monitors
+Screen UI
+•	tool bar
+•	subtle crosshair
+•	XP and money pop-ups
+•	pager messages
+Minimalistic for immersion.
+________________________________________
+20. Target Platforms
+PC (primary)
+Steam Deck (tested)
+Potential console later
+________________________________________
+21. Development Roadmap (Macro)
+Prototype (Milestone 1)
+•	First-person movement
+•	Dangling tool system
+•	3 minigame archetypes
+•	One test tool + one treatment tool
+•	One patient
+•	Basic pager → consult → discharge
+•	Money + XP popups
+Milestone 2
+•	Add wheelchair vehicle
+•	Add EKG wand
+•	Add 2 more conditions
+•	Add equipment shop
+•	Add ED + General Medicine environment
+Milestone 3
+•	Introduce first rank-up
+•	Add Cardiology
+•	Add defib
+•	Add 6–8 conditions
+Milestone 4
+•	CT scanner + Radiology zone
+•	Neurology zone
+•	VIP cases
+•	Full progression arc structure
+Milestone 5
+•	Polishing
+•	Audio
+•	Cosmetic perks
+•	Streamer-friendly touches
+•	Steam page
+________________________________________
+22. Summary
+DoctorSim is a playful first-person medical simulator built around tactile minigames, expressive tools, roaming hospital navigation, and a comedic progression arc. Its systems scale elegantly for a solo developer while providing a rich, streamer-friendly, endlessly repeatable player experience.
+It is bright, silly, tactile, and strange—
+the exact sweet spot where chaos, competence, and comedy meet.
+
