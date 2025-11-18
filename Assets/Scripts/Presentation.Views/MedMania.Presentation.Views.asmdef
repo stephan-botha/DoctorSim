@@ -1,0 +1,21 @@
+{
+    "name": "MedMania.Presentation.Views",
+    "rootNamespace": "MedMania.Presentation.Views",
+    "references": [
+        "MedMania.Core.Domain",
+        "MedMania.Core.Data",
+        "MedMania.Core.Services",
+        "MedMania.Presentation.Input"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "DOTween.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

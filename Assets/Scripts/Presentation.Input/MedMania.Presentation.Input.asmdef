@@ -1,0 +1,16 @@
+{
+    "name": "MedMania.Presentation.Input",
+    "rootNamespace": "MedMania.Presentation.Input",
+    "references": [
+        "MedMania.Core.Domain"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

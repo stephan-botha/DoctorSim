@@ -1,0 +1,16 @@
+{
+  "name": "MedMania.Tests.EditMode",
+  "rootNamespace": "MedMania.Tests.EditMode",
+  "references": [
+    "MedMania.Core.Domain",
+    "MedMania.Core.Data",
+    "MedMania.Core.Services"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

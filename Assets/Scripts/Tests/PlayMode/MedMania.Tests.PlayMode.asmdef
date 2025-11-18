@@ -1,0 +1,20 @@
+{
+  "name": "MedMania.Tests.PlayMode",
+  "rootNamespace": "MedMania.Tests.PlayMode",
+  "references": [
+    "MedMania.Core.Domain",
+    "MedMania.Core.Data",
+    "MedMania.Core.Services",
+    "MedMania.Presentation.Input",
+    "MedMania.Presentation.Views",
+    "MedMania.UI"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [],
+  "autoReferenced": false,
+  "precompiledReferences": [
+    "DOTween.dll"
+  ]
+}

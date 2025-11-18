@@ -1,0 +1,11 @@
+{
+  "name": "MedMania.Core.Data",
+  "rootNamespace": "MedMania.Core.Data",
+  "references": [
+    "MedMania.Core.Domain"
+  ],
+  "precompiledReferences": [
+    "DOTween.dll"
+  ],
+  "autoReferenced": true
+}

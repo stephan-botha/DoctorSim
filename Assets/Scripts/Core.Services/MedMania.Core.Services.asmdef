@@ -1,0 +1,8 @@
+{
+  "name": "MedMania.Core.Services",
+  "rootNamespace": "MedMania.Core.Services",
+  "references": [
+    "MedMania.Core.Domain"
+  ],
+  "autoReferenced": true
+}

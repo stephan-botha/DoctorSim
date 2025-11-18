@@ -1,0 +1,266 @@
+Let’s make a **Game Design Document (GDD)** for the *MedMania Prototype* that fits your philosophy: modular, testable, focused, and light-hearted like *Overcooked*, but grounded in the systems you’ve built.
+
+---
+
+# **MedMania – Prototype GDD**
+
+*(Version 0.1, Unity Prototype)*
+
+---
+
+## **1. Overview**
+
+### **Game Concept**
+
+*MedMania* is a fast-paced, co-op emergency room (ER) simulation inspired by *Overcooked*.
+Players control doctors and nurses who must triage, test, diagnose, and treat patients before time runs out. 
+The goal is to cooperate efficiently, performing medical procedures in the right sequence using the correct tools and equipment under time pressure.
+
+It’s **chaotic teamwork meets medical reasoning** — a lighthearted yet educational take on ER life.
+
+### **Core Fantasy**
+
+> “You’re not cooking food, you’re saving lives—with the same chaos and laughter.”
+
+Players experience the intensity of emergency medicine as a party game:
+
+* Patients = orders
+* Tests & Treatments = recipes
+* Staff = chefs
+* Tools & Equipment = kitchen utensils & stations
+
+### **Target Audience**
+
+* Fans of *Overcooked*, *Moving Out*, *Two Point Hospital*
+* Players who enjoy teamwork, time pressure, and short, repeatable gameplay loops
+* Age 12+, casual-friendly
+
+---
+
+## **2. Prototype Goals**
+
+The goal of this prototype is **to test the core gameplay loop**:
+
+1. **Triage and Pickup:** Identify patients and their needs.
+2. **Perform Tests:** Using correct tools/equipment to reveal diagnosis.
+3. **Perform Treatments:** Once diagnosed, use appropriate tools to complete care.
+4. **Discharge:** Move patients to discharge zone.
+
+Focus for prototype:
+
+* One playable staff character (WASD, Space, Ctrl).
+* One patient at a time.
+* One disease requiring a test and treatment.
+* Fully working state transitions: *Waiting → Under Test → Diagnosed → Under Treatment → Ready for Discharge*.
+* Simple UI feedback: waiting timer, progress bar, and test/treatment icons.
+
+---
+
+## **3. Core Loop**
+
+| **Phase**           | **Player Action**                                  | **System Feedback**                                       |
+| ------------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| 1. Patient Arrival  | Carry patient from waiting area to test area       | Patient card appears with hidden diagnosis                |
+| 2. Diagnostic Phase | Perform required test using correct tool/equipment | Progress bar fills; after completion, disease is revealed |
+| 3. Treatment Phase  | Perform treatment using tool/equipment             | Completion triggers “Healed” icon                         |
+| 4. Discharge        | Carry patient to discharge area                    | Score + timer reset; next patient spawns                  |
+
+Each phase produces **procedural tension**: wrong tool, moving away, or waiting too long leads to time penalties or patient deterioration (to be added in later builds).
+
+---
+
+## **4. Gameplay Mechanics**
+
+### **Controls (Prototype)**
+
+| Action               | Key        |
+| -------------------- | ---------- |
+| Move                 | WASD       |
+| Pick up / Drop       | Space      |
+| Perform Procedure    | Left Ctrl  |
+| Cycle Staff (future) | Left Shift |
+
+### **Interactions**
+
+* *Pickup Logic:* If near a carryable object (tool or patient), press Space to pick up.
+* *Drop Logic:* Press Space again to drop.
+* *Perform Procedure:* Stand facing patient, hold correct tool, press Ctrl.
+
+If the player moves away during the procedure, the timer cancels, and progress resets.
+
+### **Tools and Equipment**
+
+* **Tools**: portable instruments like stethoscopes, IV kits, defibrillators.
+* **Equipment**: fixed stations like EKG beds or scanners.
+* Each procedure (test/treatment) is linked to one tool *or* one equipment asset.
+
+### **Tests**
+
+Unlock the diagnosis when completed. Each has:
+
+* Duration (seconds)
+* Required tool/equipment
+* Visual icon
+
+Example:
+**EKG Test** → requires *EKG Kit Tool* → duration 8s → reveals *Heart Attack* diagnosis.
+
+### **Treatments**
+
+Available after diagnosis is known.
+Example:
+**Aspirin Treatment** → requires *Medication Tray Tool* → duration 5s → cures disease.
+
+---
+
+## **5. Systems Overview**
+
+### **Patients**
+
+* Contain reference to a **DiseaseSO**.
+* Each disease defines its tests and treatments.
+* Patients are carryable objects (can be moved by staff).
+* Visual states (colors/emoji) reflect condition and status.
+* Each patient has a waiting timer (decays → penalty or failure in future versions).
+
+### **Diseases**
+
+Defined in **DiseaseSO** assets:
+
+* Name: *STEMI (Heart Attack)*
+* Tests: *EKG*
+* Treatments: *Aspirin*
+* Max Wait: 120s
+
+### **Staff**
+
+* Player-controlled character.
+* Can carry one object at a time (tool or patient).
+* Can initiate one procedure at a time.
+* Interrupted if moved too far from patient.
+
+### **Timer System**
+
+Managed by `GameTimerService`:
+
+* Procedures run through independent timers.
+* Interruptions cancel timers via `Cancel()` method.
+* Provides clean test hooks for deterministic testing.
+
+### **UI**
+
+* **Patient Card:** Displays tests, treatments, waiting bar.
+* **Progress Bar:** Displays during active procedure.
+* **Icons:** Represent each required step (test/treatment).
+
+---
+
+## **6. Technical Architecture**
+
+### **Layered Overview**
+
+| Layer            | Responsibility             | Unity Component                                                                  |
+| ---------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| **Domain**       | Core logic & state machine | `Patient`, `IPatient`, `ProcedureRun`, `IProcedureContext`                       |
+| **Data**         | Scriptable definitions     | `DiseaseSO`, `TestSO`, `TreatmentSO`, `ToolSO`, `EquipmentSO`                    |
+| **Services**     | Shared runtime utilities   | `GameTimerService`, `ServiceLocator`                                             |
+| **Presentation** | Player input & visuals     | `StaffAgent`, `PatientView`, `ToolView`, `EquipmentView`, `PatientCardPresenter` |
+
+### **Data Flow**
+
+```
+Player Input → StaffAgent → PatientView → Patient (Domain)
+                              ↓
+                     GameTimerService
+                              ↓
+                     PatientCardPresenter (UI)
+```
+
+### **Testing Framework**
+
+* **EditMode Tests:** Verify diagnosis gating and state transitions.
+* **PlayMode Tests:** Verify procedure interruptions and range logic.
+
+---
+
+## **7. Level Layout (Prototype)**
+
+**Single-room ER environment:**
+
+* **Waiting Zone:** Patient spawns here.
+* **Test Zone:** EKG equipment nearby.
+* **Treatment Zone:** Simple med table or counter.
+* **Discharge Zone:** Exit door.
+* **Tool Rack:** Holds one tool (EKG kit).
+
+The room layout should encourage **crossing paths**, promoting Overcooked-style collision chaos.
+
+---
+
+## **8. Art Direction**
+
+**Prototype visuals:**
+
+* Simple colored shapes for patients, staff, and tools.
+* Use placeholder 2D sprites (colored circles, crosses, stethoscope icons).
+* Minimalist flat colors for clarity.
+
+**Future art direction:**
+
+* Stylized hospital floor plan, cartoonish but readable.
+* Distinct silhouettes for tools and patients.
+
+---
+
+## **9. Sound Design (Placeholder)**
+
+Simple tone or “beep” feedback:
+
+* **Pickup / Drop:** soft click.
+* **Procedure Start:** subtle “ping.”
+* **Success:** cheerful “ding.”
+* **Failure / Interruption:** short buzz.
+
+---
+
+## **10. Win/Loss Conditions**
+
+Prototype build:
+
+* No fail state yet.
+* Success = treating and discharging all patients.
+* Next iteration: add waiting meter expiration → lose condition.
+
+---
+
+## **11. Future Expansions**
+
+| Feature         | Description                                                |
+| --------------- | ---------------------------------------------------------- |
+| Multiplayer     | Add local co-op for up to 4 players.                       |
+| Triage System   | Sort incoming patients by severity.                        |
+| Disease Variety | Add branching protocols (e.g. pneumonia, stroke).          |
+| Score System    | Points for speed and accuracy.                             |
+| Hazards         | Random events: power outage, tool shortage, spill cleanup. |
+| Tutorials       | Onboarding with clear UI hints.                            |
+| Soundtrack      | Energetic yet humorous medical background music.           |
+
+---
+
+## **12. Prototype Success Criteria**
+
+| Goal                  | Measurement                                                       |
+| --------------------- | ----------------------------------------------------------------- |
+| **Core Loop Works**   | Tests → Diagnosis → Treatments → Discharge complete without error |
+| **Data-Driven Logic** | New diseases added purely through ScriptableObjects               |
+| **Test Coverage**     | Unit tests pass for patient diagnosis gating and interruption     |
+| **Player Feedback**   | Playtesters understand cause/effect after one round               |
+
+---
+
+## **13. Vision Statement**
+
+> *MedMania* blends laughter, learning, and chaos into one heart-thumping experience. It’s a tribute to emergency medicine, teamwork, and the absurd beauty of human coordination under pressure.
+
+---
+
