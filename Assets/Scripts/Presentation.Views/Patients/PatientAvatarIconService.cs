@@ -134,13 +134,9 @@ namespace MedMania.Presentation.Views.Patients
 
             _iconProviderLookupAttempted = true;
 
-            try
+            if (!ServiceLocator.TryGet(out _iconProvider))
             {
-                _iconProvider = ServiceLocator.Find<IProcedureIconProvider>();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"Unable to resolve {nameof(IProcedureIconProvider)}. {ex.Message}", this);
+                Debug.LogWarning($"Unable to resolve {nameof(IProcedureIconProvider)}.", this);
             }
 
             return _iconProvider;

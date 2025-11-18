@@ -429,13 +429,9 @@ namespace MedMania.UI.PatientCard
 
             _iconProviderLookupAttempted = true;
 
-            try
+            if (!ServiceLocator.TryGet(out _iconProvider))
             {
-                _iconProvider = ServiceLocator.Find<IProcedureIconProvider>();
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"Unable to resolve {nameof(IProcedureIconProvider)}. {ex.Message}", this);
+                Debug.LogWarning($"Unable to resolve {nameof(IProcedureIconProvider)}.", this);
             }
         }
 
@@ -453,13 +449,9 @@ namespace MedMania.UI.PatientCard
 
             _avatarIconServiceLookupAttempted = true;
 
-            try
+            if (!ServiceLocator.TryGet(out _avatarIconService))
             {
-                _avatarIconService = ServiceLocator.Find<IPatientAvatarIconService>();
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"Unable to resolve {nameof(IPatientAvatarIconService)}. {ex.Message}", this);
+                Debug.LogWarning($"Unable to resolve {nameof(IPatientAvatarIconService)}.", this);
             }
         }
 

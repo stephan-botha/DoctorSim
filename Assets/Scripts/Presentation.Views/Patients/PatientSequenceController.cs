@@ -396,13 +396,9 @@ namespace MedMania.Presentation.Views.Patients
 
             _avatarIconServiceLookupAttempted = true;
 
-            try
+            if (!ServiceLocator.TryGet(out _avatarIconService))
             {
-                _avatarIconService = ServiceLocator.Find<IPatientAvatarIconService>();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"Unable to resolve {nameof(IPatientAvatarIconService)}. {ex.Message}", this);
+                Debug.LogWarning($"Unable to resolve {nameof(IPatientAvatarIconService)}.", this);
             }
         }
 
@@ -554,10 +550,7 @@ namespace MedMania.Presentation.Views.Patients
 
         private void EnsureTimer()
         {
-            if (_gameTimer == null)
-            {
-                _gameTimer = ServiceLocator.Find<GameTimerService>();
-            }
+            ServiceLocator.TryGet(out _gameTimer);
         }
 
         private string GetNextName()
