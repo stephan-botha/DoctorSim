@@ -3,6 +3,7 @@
 // Responsibility: handle staff interaction inputs (carry/perform) and slot highlighting
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
@@ -22,7 +23,6 @@ namespace MedMania.Presentation.Input.Staff
         [SerializeField] private Animator _animator;
         [SerializeField] private string _speedParam = "Speed";
         [SerializeField] private string _carryingParam = "Carrying";
-        [SerializeField] private Camera _camera;
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField] private InputActionReference _carryAction;
         [SerializeField] private InputActionReference _performAction;
@@ -32,6 +32,9 @@ namespace MedMania.Presentation.Input.Staff
         private UnityEngine.Object _heldProcedureDebug;
         [SerializeField] private UnityEvent<IProcedureDef> _performRequested = new();
         [SerializeField] private SlotHighlightController _slotHighlight = new();
+
+        private readonly Collider[] _overlapBuffer = new Collider[16];
+        private readonly List<ICarrySlot> _nearbySlots = new();
 
         private Rigidbody _rb;
         private Vector3 _move;
@@ -177,28 +180,58 @@ namespace MedMania.Presentation.Input.Staff
 
         private ICarrySlot FindBestSlot()
         {
-            var camera = ResolveCamera();
-            if (camera == null)
+            CleanupNearbySlots();
+
+            ICarrySlot best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (var slot in _nearbySlots)
             {
-                return null;
+                float dist = Vector3.Distance(transform.position, slot.Transform.position);
+                if (dist < bestDist)
+                {
+                    best = slot;
+                    bestDist = dist;
+                }
             }
 
-            var ray = camera.ScreenPointToRay(new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f));
-            var mask = _interactionMask == 0 ? Physics.DefaultRaycastLayers : _interactionMask;
+            if (best != null) return best;
 
-            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, mask, QueryTriggerInteraction.Collide))
+            int count = Physics.OverlapSphereNonAlloc(transform.position, _interactionRadius, _overlapBuffer, _interactionMask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count; i++)
             {
-                return null;
+                var collider = _overlapBuffer[i];
+                if (!collider) continue;
+                if (!IsLayerValid(collider.gameObject.layer)) continue;
+
+                var slot = collider.GetComponentInParent<ICarrySlot>();
+                if (slot == null || slot == _hands) continue;
+
+                float dist = Vector3.Distance(transform.position, slot.Transform.position);
+                if (dist < bestDist)
+                {
+                    best = slot;
+                    bestDist = dist;
+                }
             }
 
-            var slot = hit.collider.GetComponentInParent<ICarrySlot>();
-            if (slot == null || slot == _hands)
-            {
-                return null;
-            }
+            return best;
+        }
 
-            var distanceToAgent = Vector3.Distance(transform.position, slot.Transform.position);
-            return distanceToAgent <= _interactionRadius ? slot : null;
+        private void CleanupNearbySlots()
+        {
+            for (int i = _nearbySlots.Count - 1; i >= 0; i--)
+            {
+                if (_nearbySlots[i] == null)
+                {
+                    _nearbySlots.RemoveAt(i);
+                }
+            }
+        }
+
+        private bool IsLayerValid(int layer)
+        {
+            return _interactionMask == 0 || ((_interactionMask.value & (1 << layer)) != 0);
         }
 
         private void UpdateHeldProcedure()
@@ -282,6 +315,26 @@ namespace MedMania.Presentation.Input.Staff
             }
         }
 
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!IsLayerValid(other.gameObject.layer)) return;
+
+            var slot = other.GetComponentInParent<ICarrySlot>();
+            if (slot != null && slot != _hands && !_nearbySlots.Contains(slot))
+            {
+                _nearbySlots.Add(slot);
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            var slot = other.GetComponentInParent<ICarrySlot>();
+            if (slot != null)
+            {
+                _nearbySlots.Remove(slot);
+            }
+        }
+
         private void OnDestroy()
         {
             _slotHighlight.Dispose();
@@ -359,17 +412,6 @@ namespace MedMania.Presentation.Input.Staff
 
             var input = action.ReadValue<Vector2>();
             return new Vector3(input.x, 0f, input.y).normalized;
-        }
-
-        private Camera ResolveCamera()
-        {
-            if (_camera != null)
-            {
-                return _camera;
-            }
-
-            _camera = Camera.main;
-            return _camera;
         }
 
         [Serializable]
