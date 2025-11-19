@@ -27,6 +27,7 @@ namespace MedMania.Presentation.Input.Staff
         [SerializeField] private InputActionReference _carryAction;
         [SerializeField] private InputActionReference _performAction;
         [SerializeField, FormerlySerializedAs("_slotHighlightPrefab")] private GameObject _slotHighlightPrefab;
+        [SerializeField] private Camera _viewCamera;
         [NonSerialized] private IProcedureDef _heldProcedure;
         [SerializeField, Tooltip("Runtime debug view of the currently held procedure.")]
         private UnityEngine.Object _heldProcedureDebug;
@@ -169,13 +170,57 @@ namespace MedMania.Presentation.Input.Staff
 
         private void RefreshFocusedSlot()
         {
-            var best = FindBestSlot();
+            var best = FindSlotAtPointer();
             if (!ReferenceEquals(_focusedSlot, best))
             {
                 _focusedSlot = best;
             }
 
             _slotHighlight.Apply(_focusedSlot);
+        }
+
+        private ICarrySlot FindSlotAtPointer()
+        {
+            var camera = ResolveCamera();
+            if (camera == null)
+            {
+                return null;
+            }
+
+            var mouse = Mouse.current;
+            var screenPosition = mouse != null
+                ? mouse.position.ReadValue()
+                : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+            var ray = camera.ScreenPointToRay(screenPosition);
+
+            int mask = _interactionMask == 0 ? Physics.DefaultRaycastLayers : _interactionMask;
+            if (Physics.Raycast(ray, out var hit, _interactionRadius, mask, QueryTriggerInteraction.Collide))
+            {
+                var slot = hit.collider.GetComponentInParent<ICarrySlot>();
+                if (slot != null && slot != _hands)
+                {
+                    return slot;
+                }
+            }
+
+            return null;
+        }
+
+        private Camera ResolveCamera()
+        {
+            if (_viewCamera != null)
+            {
+                return _viewCamera;
+            }
+
+            if (Camera.main != null)
+            {
+                _viewCamera = Camera.main;
+                return _viewCamera;
+            }
+
+            return null;
         }
 
         private ICarrySlot FindBestSlot()
