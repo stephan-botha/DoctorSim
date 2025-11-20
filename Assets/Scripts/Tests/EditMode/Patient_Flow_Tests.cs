@@ -110,9 +110,11 @@ public class Patient_Flow_Tests
         {
             Name = name;
             Kind = kind;
+            InteractionText = name;
         }
 
         public string Name { get; }
+        public string InteractionText { get; }
         public ProcedureKind Kind { get; }
         public float DurationSeconds => 1f;
         public MedMania.Core.Domain.Inventory.IToolDef RequiredTool => null;

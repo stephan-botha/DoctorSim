@@ -15,6 +15,9 @@ namespace MedMania.Core.Data.ScriptableObjects
         [SerializeField] private ToolSO _requiredTool;
         [SerializeField] private EquipmentSO _requiredEquipment;
 
+        [Header("Interaction")]
+        [SerializeField, TextArea] private string _interactionText = "Press Ctrl to perform";
+
         [Header("Icon")]
         [SerializeField] private Sprite _iconSprite;
         [SerializeField] private GameObject _iconPrefab;
@@ -22,6 +25,7 @@ namespace MedMania.Core.Data.ScriptableObjects
         [SerializeField] private Color _iconRenderBackground = Color.clear;
 
         public string Name => _name;
+        public string InteractionText => _interactionText;
         public abstract ProcedureKind Kind { get; }
         public float DurationSeconds => _durationSeconds;
         public IToolDef RequiredTool => _requiredTool;
