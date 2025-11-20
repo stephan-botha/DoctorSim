@@ -7,6 +7,7 @@ using UnityEngine;
 using MedMania.Core.Data.ScriptableObjects;
 using MedMania.Core.Domain.Inventory;
 using MedMania.Core.Domain.Procedures;
+using MedMania.Core.Domain.Patients;
 using MedMania.Presentation.Input.Staff;
 using MedMania.Presentation.Views.Carry;
 using MedMania.Presentation.Views.Patients;
@@ -48,7 +49,7 @@ namespace MedMania.Presentation.Views.Inventory
         /// <summary>Gets a read-only collection of all active equipment views.</summary>
         public static IReadOnlyList<EquipmentView> Active => s_Active;
 
-        bool IProcedureStation.IsPatientReady => _patientSlot != null && _patientSlot.Current is PatientCarryView patient && patient != null;
+        bool IProcedureStation.IsPatientReady => _patientSlot != null && _patientSlot.Current is IPatientCarryable;
 
         Transform IProcedureStation.InteractionAnchor => InteractionAnchor;
 
@@ -81,10 +82,19 @@ namespace MedMania.Presentation.Views.Inventory
                 return false;
             }
 
-            if (_patientSlot.Current is PatientCarryView patientCarry && patientCarry != null)
+            if (_patientSlot.Current is IPatientCarryable patientCarry && patientCarry is Component component)
             {
-                view = patientCarry.View;
-                return view != null;
+                if (patientCarry is PatientCarryView patientCarryView && patientCarryView.View != null)
+                {
+                    view = patientCarryView.View;
+                    return true;
+                }
+
+                if (component.TryGetComponent(out PatientView patientView))
+                {
+                    view = patientView;
+                    return true;
+                }
             }
 
             return false;
