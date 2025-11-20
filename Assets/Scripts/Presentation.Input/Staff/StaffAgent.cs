@@ -10,6 +10,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using MedMania.Core.Domain.Inventory;
 using MedMania.Core.Domain.Procedures;
+using MedMania.Presentation.Views.Patients;
 
 namespace MedMania.Presentation.Input.Staff
 {
@@ -132,37 +133,122 @@ namespace MedMania.Presentation.Input.Staff
             if (_hands == null) return;
 
             RefreshFocusedSlot();
+            UpdateHeldProcedure();
 
             var slot = _focusedSlot != null ? _focusedSlot : FindBestSlot();
 
+            if (slot == null)
+            {
+                FinalizeCarryInteraction();
+                return;
+            }
+
+            if (IsPatientSlot(slot))
+            {
+                HandlePatientInteraction();
+            }
+            else if (slot.IsEmpty)
+            {
+                HandleEmptySlotInteraction(slot);
+            }
+            else
+            {
+                HandleToolInteraction(slot);
+            }
+
+            FinalizeCarryInteraction();
+        }
+
+        private void FinalizeCarryInteraction()
+        {
+            UpdateHeldProcedure();
+            RefreshFocusedSlot();
+            UpdateAnimator();
+        }
+
+        private bool IsPatientSlot(ICarrySlot slot)
+        {
+            return slot?.Current is PatientCarryView;
+        }
+
+        private void HandlePatientInteraction()
+        {
+            if (_heldProcedure == null)
+            {
+                return;
+            }
+
+            _performRequested?.Invoke(_heldProcedure);
+            _performRequestedHandlers?.Invoke(_heldProcedure);
+        }
+
+        private void HandleEmptySlotInteraction(ICarrySlot slot)
+        {
             if (_hands.IsEmpty)
             {
-                if (slot != null && slot.TryTake(out var removed))
+                return;
+            }
+
+            if (!_hands.TryTake(out var carrying) || carrying == null)
+            {
+                return;
+            }
+
+            if (carrying is PatientCarryView)
+            {
+                _hands.TrySwap(carrying, out _);
+                return;
+            }
+
+            if (!slot.TrySwap(carrying, out _))
+            {
+                _hands.TrySwap(carrying, out _);
+            }
+        }
+
+        private void HandleToolInteraction(ICarrySlot slot)
+        {
+            if (_hands.IsEmpty)
+            {
+                if (slot.TryTake(out var removed))
                 {
-                    if (!_hands.TrySwap(removed, out _))
+                    if (!TryPlaceInHands(removed))
                     {
                         slot.TrySwap(removed, out _);
                     }
                 }
-            }
-            else
-            {
-                if (slot != null && _hands.TryTake(out var carrying))
-                {
-                    if (!slot.TrySwap(carrying, out var displaced))
-                    {
-                        _hands.TrySwap(carrying, out _);
-                    }
-                    else if (displaced != null)
-                    {
-                        _hands.TrySwap(displaced, out _);
-                    }
-                }
+
+                return;
             }
 
-            UpdateHeldProcedure();
-            RefreshFocusedSlot();
-            UpdateAnimator();
+            if (!_hands.TryTake(out var carrying) || carrying == null)
+            {
+                return;
+            }
+
+            if (!slot.TrySwap(carrying, out var displaced))
+            {
+                _hands.TrySwap(carrying, out _);
+                return;
+            }
+
+            if (!TryPlaceInHands(displaced))
+            {
+                if (slot.TrySwap(displaced, out var reverted))
+                {
+                    _hands.TrySwap(reverted, out _);
+                }
+            }
+        }
+
+        private bool TryPlaceInHands(ICarryable carryable)
+        {
+            if (carryable is PatientCarryView)
+            {
+                return false;
+            }
+
+            return _hands.TrySwap(carryable, out _);
         }
 
         private void RefreshFocusedSlot()
