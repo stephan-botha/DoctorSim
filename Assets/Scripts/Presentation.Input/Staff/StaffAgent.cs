@@ -143,6 +143,14 @@ namespace MedMania.Presentation.Input.Staff
                 return;
             }
 
+            var heldTransporter = GetTransporter(_hands.Current);
+            if (heldTransporter != null)
+            {
+                HandleTransporterInteraction(slot, heldTransporter);
+                FinalizeCarryInteraction();
+                return;
+            }
+
             if (IsPatientSlot(slot))
             {
                 HandlePatientInteraction();
@@ -189,6 +197,11 @@ namespace MedMania.Presentation.Input.Staff
                 return;
             }
 
+            if (_hands.Current is ITransporter transporter && transporter.HasPatient)
+            {
+                return;
+            }
+
             if (!_hands.TryTake(out var carrying) || carrying == null)
             {
                 return;
@@ -208,6 +221,12 @@ namespace MedMania.Presentation.Input.Staff
 
         private void HandleToolInteraction(ICarrySlot slot)
         {
+            var slotTransporter = GetTransporter(slot.Current);
+            if (slotTransporter != null && slotTransporter.HasPatient)
+            {
+                return;
+            }
+
             if (_hands.IsEmpty)
             {
                 if (slot.TryTake(out var removed))
@@ -241,9 +260,94 @@ namespace MedMania.Presentation.Input.Staff
             }
         }
 
+        private void HandleTransporterInteraction(ICarrySlot slot, ITransporter transporter)
+        {
+            if (transporter == null || slot == null)
+            {
+                return;
+            }
+
+            if (transporter.HasPatient)
+            {
+                if (slot.IsEmpty && TryUnloadTransporter(transporter, slot))
+                {
+                    return;
+                }
+
+                return;
+            }
+
+            if (slot.Current is IPatientCarryable && TryLoadTransporter(transporter, slot))
+            {
+                return;
+            }
+
+            if (slot.IsEmpty)
+            {
+                HandleEmptySlotInteraction(slot);
+            }
+        }
+
+        private bool TryLoadTransporter(ITransporter transporter, ICarrySlot sourceSlot)
+        {
+            if (transporter == null || sourceSlot == null || transporter.HasPatient)
+            {
+                return false;
+            }
+
+            if (!(sourceSlot.Current is IPatientCarryable))
+            {
+                return false;
+            }
+
+            if (!sourceSlot.TryTake(out var carryable) || carryable is not IPatientCarryable patient)
+            {
+                return false;
+            }
+
+            if (transporter.TryLoadPatient(patient))
+            {
+                return true;
+            }
+
+            sourceSlot.TrySwap(patient, out _);
+            return false;
+        }
+
+        private bool TryUnloadTransporter(ITransporter transporter, ICarrySlot targetSlot)
+        {
+            if (transporter == null || targetSlot == null || !targetSlot.IsEmpty)
+            {
+                return false;
+            }
+
+            if (!transporter.TryUnloadPatient(out var patient) || patient == null)
+            {
+                return false;
+            }
+
+            if (targetSlot.TrySwap(patient, out _))
+            {
+                return true;
+            }
+
+            transporter.TryLoadPatient(patient);
+            return false;
+        }
+
+        private static ITransporter GetTransporter(ICarryable carryable)
+        {
+            return carryable as ITransporter;
+        }
+
         private bool TryPlaceInHands(ICarryable carryable)
         {
             if (carryable is IPatientCarryable)
+            {
+                return false;
+            }
+
+            if (carryable is ITransporter transporter && transporter.HasPatient)
             {
                 return false;
             }
@@ -546,7 +650,25 @@ namespace MedMania.Presentation.Input.Staff
             }
 
             var input = action.ReadValue<Vector2>();
-            return new Vector3(input.x, 0f, input.y).normalized;
+            var move = new Vector3(input.x, 0f, input.y);
+            if (move.sqrMagnitude > 1f)
+            {
+                move.Normalize();
+            }
+
+            return move * ResolveSpeedModifier();
+        }
+
+        private float ResolveSpeedModifier()
+        {
+            var transporter = GetTransporter(_hands?.Current);
+            if (transporter == null)
+            {
+                return 1f;
+            }
+
+            var modifier = transporter.SpeedModifier;
+            return modifier <= 0f ? 1f : modifier;
         }
 
         [Serializable]
