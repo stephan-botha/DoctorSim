@@ -9,7 +9,6 @@ namespace MedMania.Core.Domain.Procedures
     public interface IProcedureDef
     {
         string Name { get; }
-        string InteractionText { get; }
         ProcedureKind Kind { get; }
         float DurationSeconds { get; }
 
