@@ -14,6 +14,7 @@ namespace MedMania.Presentation.Views.Carry
     {
         [SerializeField] private Canvas _canvas;
         [SerializeField] private TMP_Text _text;
+        [SerializeField] private bool _billboardToCamera = true;
         [SerializeField] private bool _hideOnAwake = true;
         [SerializeField] private StaffAgent _staffAgent;
 
@@ -54,7 +55,26 @@ namespace MedMania.Presentation.Views.Carry
 
             SetVisible(shouldShow);
         }
+        
+        private void LateUpdate()
+        {
+            if (!_billboardToCamera || _canvas == null)
+            {
+                return;
+            }
 
+            var cam = Camera.main;
+            if (cam == null)
+            {
+                return;
+            }
+
+            var target = _canvas.transform;
+            var forward = cam.transform.forward;
+            var up = Vector3.up;
+            target.rotation = Quaternion.LookRotation(forward, up);
+        }
+        
         private void SetVisible(bool visible)
         {
             if (_canvas == null)

@@ -5,7 +5,8 @@
         "MedMania.Core.Domain",
         "MedMania.Core.Data",
         "MedMania.Core.Services",
-        "MedMania.Presentation.Input"
+        "MedMania.Presentation.Input",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
