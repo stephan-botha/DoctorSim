@@ -11,6 +11,7 @@ public class Patient_DiagnosisGating_Tests
     private class Proc : IProcedureDef
     {
         public string Name { get; set; }
+        public string InteractionText { get; set; }
         public ProcedureKind Kind { get; set; }
         public float DurationSeconds { get; set; } = 1f;
         public MedMania.Core.Domain.Inventory.IToolDef RequiredTool => null;

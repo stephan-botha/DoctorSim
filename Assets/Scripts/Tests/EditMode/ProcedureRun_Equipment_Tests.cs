@@ -117,9 +117,11 @@ public class ProcedureRun_Equipment_Tests
             Name = name;
             Kind = kind;
             _equipment = equipment;
+            InteractionText = name;
         }
 
         public string Name { get; }
+        public string InteractionText { get; }
         public ProcedureKind Kind { get; }
         public float DurationSeconds => 1f;
         public IToolDef RequiredTool => null;
