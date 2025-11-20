@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using MedMania.Core.Domain.Inventory;
 using MedMania.Core.Domain.Procedures;
-using MedMania.Presentation.Views.Patients;
+using MedMania.Core.Domain.Patients;
 
 namespace MedMania.Presentation.Input.Staff
 {
@@ -168,7 +168,7 @@ namespace MedMania.Presentation.Input.Staff
 
         private bool IsPatientSlot(ICarrySlot slot)
         {
-            return slot?.Current is PatientCarryView;
+            return slot?.Current is IPatientCarryable;
         }
 
         private void HandlePatientInteraction()
@@ -194,7 +194,7 @@ namespace MedMania.Presentation.Input.Staff
                 return;
             }
 
-            if (carrying is PatientCarryView)
+            if (carrying is IPatientCarryable)
             {
                 _hands.TrySwap(carrying, out _);
                 return;
@@ -243,7 +243,7 @@ namespace MedMania.Presentation.Input.Staff
 
         private bool TryPlaceInHands(ICarryable carryable)
         {
-            if (carryable is PatientCarryView)
+            if (carryable is IPatientCarryable)
             {
                 return false;
             }

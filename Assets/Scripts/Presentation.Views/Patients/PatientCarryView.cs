@@ -9,7 +9,7 @@ using MedMania.Core.Domain.Patients;
 namespace MedMania.Presentation.Views.Patients
 {
     [RequireComponent(typeof(PatientView))]
-    public sealed class PatientCarryView : MonoBehaviour, ICarryable
+    public sealed class PatientCarryView : MonoBehaviour, IPatientCarryable
     {
         [SerializeField] private PatientView _patientView;
 
