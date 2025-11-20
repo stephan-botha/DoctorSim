@@ -50,7 +50,6 @@ namespace MedMania.Presentation.Input.Staff
         public IProcedureDef HeldProcedure => _heldProcedure;
         public IProcedureStation CurrentStation => _cachedStation;
         public ICarrySlot HandsSlot => _hands;
-        public ICarrySlot FocusedSlot => _focusedSlot;
         public UnityEvent<IProcedureDef> PerformRequested => _performRequested;
         IProcedureDef IProcedurePerformer.HeldProcedure => HeldProcedure;
         event System.Action<IProcedureDef> IProcedurePerformer.PerformRequested

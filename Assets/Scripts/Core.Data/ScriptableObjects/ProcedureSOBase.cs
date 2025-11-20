@@ -10,7 +10,6 @@ namespace MedMania.Core.Data.ScriptableObjects
     public abstract class ProcedureSOBase : ScriptableObject, IProcedureDef
     {
         [SerializeField] private string _name = "Unnamed";
-        [SerializeField, TextArea] private string _interactionText = "Perform";
         [SerializeField] private float _durationSeconds = 5f;
         [Header("Requires (choose one)")]
         [SerializeField] private ToolSO _requiredTool;
@@ -23,7 +22,6 @@ namespace MedMania.Core.Data.ScriptableObjects
         [SerializeField] private Color _iconRenderBackground = Color.clear;
 
         public string Name => _name;
-        public string InteractionText => string.IsNullOrWhiteSpace(_interactionText) ? _name : _interactionText;
         public abstract ProcedureKind Kind { get; }
         public float DurationSeconds => _durationSeconds;
         public IToolDef RequiredTool => _requiredTool;
