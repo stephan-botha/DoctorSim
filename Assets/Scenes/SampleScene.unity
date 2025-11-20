@@ -8521,16 +8521,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4096629271542548458, guid: 787994e141eb0e442bb082560771124a, type: 3}
       propertyPath: _moveAction
-      value: 
+      value:
       objectReference: {fileID: -3552364970006637457, guid: 4419d82f33d36e848b3ed5af4c8da37e, type: 3}
     - target: {fileID: 4096629271542548458, guid: 787994e141eb0e442bb082560771124a, type: 3}
-      propertyPath: _carryAction
-      value: 
+      propertyPath: _interactAction
+      value:
       objectReference: {fileID: -1916377846673030204, guid: 4419d82f33d36e848b3ed5af4c8da37e, type: 3}
-    - target: {fileID: 4096629271542548458, guid: 787994e141eb0e442bb082560771124a, type: 3}
-      propertyPath: _performAction
-      value: 
-      objectReference: {fileID: -2958319475996445206, guid: 4419d82f33d36e848b3ed5af4c8da37e, type: 3}
     - target: {fileID: 4096629271542548458, guid: 787994e141eb0e442bb082560771124a, type: 3}
       propertyPath: _handsComponent
       value: 

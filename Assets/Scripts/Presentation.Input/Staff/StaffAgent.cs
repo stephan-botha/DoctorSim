@@ -24,8 +24,7 @@ namespace MedMania.Presentation.Input.Staff
         [SerializeField] private string _speedParam = "Speed";
         [SerializeField] private string _carryingParam = "Carrying";
         [SerializeField] private InputActionReference _moveAction;
-        [SerializeField] private InputActionReference _carryAction;
-        [SerializeField] private InputActionReference _performAction;
+        [SerializeField, FormerlySerializedAs("_carryAction")] private InputActionReference _interactAction;
         [SerializeField, FormerlySerializedAs("_slotHighlightPrefab")] private GameObject _slotHighlightPrefab;
         [SerializeField] private Camera _viewCamera;
         [NonSerialized] private IProcedureDef _heldProcedure;
@@ -100,8 +99,7 @@ namespace MedMania.Presentation.Input.Staff
 
         private void OnEnable()
         {
-            BindInput(_carryAction, OnCarryPerformed);
-            BindInput(_performAction, OnPerformRequested);
+            BindInput(_interactAction, OnInteractPerformed);
             EnableAction(_moveAction);
         }
 
@@ -109,11 +107,9 @@ namespace MedMania.Presentation.Input.Staff
         {
             _focusedSlot = null;
             _slotHighlight.Clear();
-            UnbindInput(_carryAction, OnCarryPerformed);
-            UnbindInput(_performAction, OnPerformRequested);
+            UnbindInput(_interactAction, OnInteractPerformed);
             DisableAction(_moveAction);
-            DisableAction(_carryAction);
-            DisableAction(_performAction);
+            DisableAction(_interactAction);
         }
 
         private ICarrySlot ResolveSlot(Component component)
@@ -283,7 +279,7 @@ namespace MedMania.Presentation.Input.Staff
         private void UpdateHeldProcedure()
         {
             IProcedureDef procedure = null;
-            IProcedureStation station = null;
+            var station = FindBestStation();
 
             if (_hands != null && !_hands.IsEmpty)
             {
@@ -294,13 +290,9 @@ namespace MedMania.Presentation.Input.Staff
                 }
             }
 
-            if (procedure == null)
+            if (procedure == null && station != null && station.Procedure != null)
             {
-                station = FindBestStation();
-                if (station != null && station.Procedure != null)
-                {
-                    procedure = station.Procedure;
-                }
+                procedure = station.Procedure;
             }
 
             _cachedStation = station;
@@ -386,15 +378,26 @@ namespace MedMania.Presentation.Input.Staff
             _slotHighlight.Dispose();
         }
 
-        private void OnPerformRequested(InputAction.CallbackContext _)
+        private void OnInteractPerformed(InputAction.CallbackContext _)
         {
-            _performRequested?.Invoke(_heldProcedure);
-            _performRequestedHandlers?.Invoke(_heldProcedure);
+            if (TryRequestProcedure())
+            {
+                return;
+            }
+
+            HandleCarryToggle();
         }
 
-        private void OnCarryPerformed(InputAction.CallbackContext _)
+        private bool TryRequestProcedure()
         {
-            HandleCarryToggle();
+            if (_cachedStation == null || _cachedStation.Procedure == null || _heldProcedure == null)
+            {
+                return false;
+            }
+
+            _performRequested?.Invoke(_heldProcedure);
+            _performRequestedHandlers?.Invoke(_heldProcedure);
+            return true;
         }
 
         private void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
