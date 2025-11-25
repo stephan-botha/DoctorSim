@@ -1,0 +1,11 @@
+{
+    "asset": "872567e7e6c3a00488654bba053cd15c",
+    "fileName": "019aa8b3-6a98-7775-9647-9260f5808727.pose.json",
+    "prompt": "scratching nose while sitting",
+    "negativePrompt": "",
+    "model": "9e46c009-67d8-4254-a3a0-32e3168247ee",
+    "modelName": "Text to Motion",
+    "customSeed": 1489271762,
+    "w3CTraceId": "7f2db63933abe937855cbd0d443ed183",
+    "isTrimmed": false
+}

@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 11400000, guid: e544b4431ddf8fc47b9eb64ead320433, type: 2}
   _requiredEquipment: {fileID: 0}
+  _interactionText: Check Temperature
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1009693831938304, guid: d2e35eba0541d2b449378e6fb5e5b220, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

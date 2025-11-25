@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 11400000, guid: aace5ea84350fc143a65b0f41fddd2f1, type: 2}
   _requiredEquipment: {fileID: 11400000, guid: d19beb18643ae354c8fd70af4ade577e, type: 2}
+  _interactionText: Scan Brain
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1913302090656588, guid: 379892340203d5042ab5590bdf12bd6a, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

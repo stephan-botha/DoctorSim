@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 11400000, guid: b484e7590b4bd33408c76a3d01c0689a, type: 2}
   _requiredEquipment: {fileID: 0}
+  _interactionText: Inject antibiotics
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1320867821114936, guid: 5d2e0620aeb9ab3458cfa97eff19a726, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

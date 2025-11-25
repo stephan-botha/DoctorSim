@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 11400000, guid: 36b6703124dd6ba47a6392b6de80726b, type: 2}
   _requiredEquipment: {fileID: 0}
+  _interactionText: Do Spinal Tap
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1372783663253154, guid: 4732bed4f154e85449199d01e29db14a, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

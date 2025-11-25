@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 0}
   _requiredEquipment: {fileID: 11400000, guid: d6e23ccf91e258249be937589b31d00a, type: 2}
+  _interactionText: Inject clot busters
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1598294515968244, guid: 7f575c8dff889a943bc82d5f66a8378d, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

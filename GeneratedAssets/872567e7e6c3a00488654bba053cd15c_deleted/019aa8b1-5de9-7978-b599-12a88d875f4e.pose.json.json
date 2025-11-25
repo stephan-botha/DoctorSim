@@ -1,0 +1,11 @@
+{
+    "asset": "872567e7e6c3a00488654bba053cd15c",
+    "fileName": "019aa8b1-5de9-7978-b599-12a88d875f4e.pose.json",
+    "prompt": "idling while sitting",
+    "negativePrompt": "",
+    "model": "9e46c009-67d8-4254-a3a0-32e3168247ee",
+    "modelName": "Text to Motion",
+    "customSeed": 1316559039,
+    "w3CTraceId": "bc6a2d6c9e30c5fd9798b0f50a49c324",
+    "isTrimmed": false
+}

@@ -1,0 +1,11 @@
+{
+    "asset": "872567e7e6c3a00488654bba053cd15c",
+    "fileName": "019aa8b3-ba96-72fd-b61e-a813f9ef9a90.pose.json",
+    "prompt": "sitting and scrathcing nose",
+    "negativePrompt": "",
+    "model": "9e46c009-67d8-4254-a3a0-32e3168247ee",
+    "modelName": "Text to Motion",
+    "customSeed": 299469884,
+    "w3CTraceId": "534e925b1d5adee4dc9ae1354cc28813",
+    "isTrimmed": false
+}

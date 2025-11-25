@@ -16,6 +16,7 @@ MonoBehaviour:
   _durationSeconds: 5
   _requiredTool: {fileID: 11400000, guid: aace5ea84350fc143a65b0f41fddd2f1, type: 2}
   _requiredEquipment: {fileID: 11400000, guid: 7feb3b68bc02a874282a3bcfc54ff754, type: 2}
+  _interactionText: Do ECG
   _iconSprite: {fileID: 0}
   _iconPrefab: {fileID: 1773114164034446, guid: aec1f5182bbb8ac41b4cb201d306686a, type: 3}
   _iconRenderTextureSize: {x: 48, y: 48}

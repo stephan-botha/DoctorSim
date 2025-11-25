@@ -1,0 +1,11 @@
+{
+    "asset": "f9bb7c9887f465c4da80c2221c9f7a78",
+    "fileName": "019aac7c-7ff2-7395-8e40-ee1ef8e1c054.pose.json",
+    "prompt": "stand up",
+    "negativePrompt": "",
+    "model": "9e46c009-67d8-4254-a3a0-32e3168247ee",
+    "modelName": "Text to Motion",
+    "customSeed": 570244954,
+    "w3CTraceId": "9befe5911133022854a6289f7c3bdde0",
+    "isTrimmed": false
+}
