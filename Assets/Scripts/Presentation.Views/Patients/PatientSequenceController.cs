@@ -238,8 +238,7 @@ namespace MedMania.Presentation.Views.Patients
 
             _avatarAssignments.Remove(patientView);
 
-            var patientTransform = patientView.transform;
-            var originalAvatar = FindMeshChild(patientTransform);
+            var originalAvatar = FindAvatarMesh(patientView);
             if (originalAvatar == null)
             {
                 return;
@@ -288,19 +287,35 @@ namespace MedMania.Presentation.Views.Patients
             Destroy(originalAvatar.gameObject);
         }
 
-        private Transform FindMeshChild(Transform parent)
+        private Transform FindAvatarMesh(PatientView patientView)
+        {
+            if (patientView == null)
+            {
+                return null;
+            }
+
+            return FindMeshChildRecursive(patientView.AvatarRoot);
+        }
+
+        private Transform FindMeshChildRecursive(Transform parent)
         {
             if (parent == null)
             {
                 return null;
             }
 
+            if (parent.TryGetComponent<SkinnedMeshRenderer>(out _) || parent.TryGetComponent<Renderer>(out _))
+            {
+                return parent;
+            }
+
             for (int i = 0; i < parent.childCount; i++)
             {
                 var child = parent.GetChild(i);
-                if (child != null && child.TryGetComponent<Renderer>(out _))
+                var found = FindMeshChildRecursive(child);
+                if (found != null)
                 {
-                    return child;
+                    return found;
                 }
             }
 
@@ -333,7 +348,7 @@ namespace MedMania.Presentation.Views.Patients
 
             if (!_avatarAssignments.TryGetValue(view, out var avatarPrefab) || avatarPrefab == null)
             {
-                var fallback = FindMeshChild(view.transform);
+                var fallback = FindAvatarMesh(view);
                 avatarPrefab = fallback != null ? fallback.gameObject : null;
                 if (avatarPrefab != null)
                 {

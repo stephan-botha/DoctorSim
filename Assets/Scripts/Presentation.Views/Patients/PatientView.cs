@@ -21,10 +21,12 @@ namespace MedMania.Presentation.Views.Patients
 
         [SerializeField] private string _displayName = "Patient";
         [SerializeField] private DiseaseSO _disease;
+        [SerializeField] private Transform _avatarRoot;
         [SerializeField] private PatientEvent _patientReady = new PatientEvent();
 
         public IPatient Domain { get; private set; }
         public PatientEvent PatientReady => _patientReady;
+        public Transform AvatarRoot => _avatarRoot != null ? _avatarRoot : transform;
         public static IReadOnlyList<PatientView> Active => s_Active;
 
         private void Awake()
