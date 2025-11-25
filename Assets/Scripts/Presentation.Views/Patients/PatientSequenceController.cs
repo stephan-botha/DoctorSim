@@ -20,6 +20,12 @@ namespace MedMania.Presentation.Views.Patients
 {
     public sealed class PatientSequenceController : MonoBehaviour
     {
+        private sealed class AvatarAssignment
+        {
+            public GameObject Prefab;
+            public GameObject Instance;
+        }
+
         [Header("Patient Lifecycle")]
         [SerializeField] private PatientView _patientPrefab;
         [SerializeField] private DiseaseSO[] _diseases;
@@ -47,7 +53,7 @@ namespace MedMania.Presentation.Views.Patients
         private readonly Dictionary<PatientView, CarrySlot> _patientSeats = new();
         private readonly Dictionary<PatientView, IDisposable> _scheduledRespawns = new();
         private readonly Dictionary<PatientView, UnityAction<IPatient>> _readyListeners = new();
-        private readonly Dictionary<PatientView, GameObject> _avatarAssignments = new();
+        private readonly Dictionary<PatientView, AvatarAssignment> _avatarAssignments = new();
         private IPatientAvatarIconService _avatarIconService;
         private bool _avatarIconServiceLookupAttempted;
         
@@ -236,90 +242,115 @@ namespace MedMania.Presentation.Views.Patients
                 return;
             }
 
-            _avatarAssignments.Remove(patientView);
-
-            var originalAvatar = FindAvatarMesh(patientView);
-            if (originalAvatar == null)
+            var avatarAnchor = patientView.AvatarAnchor;
+            if (avatarAnchor == null)
             {
+                _avatarAssignments.Remove(patientView);
                 return;
             }
 
-            if (_patientAvatars == null || _patientAvatars.Length == 0)
-            {
-                _avatarAssignments[patientView] = originalAvatar.gameObject;
-                return;
-            }
-
+            var existingAvatar = FindAvatarRoot(avatarAnchor);
             var avatarPrefab = GetRandomAvatar();
-            if (avatarPrefab == null)
+
+            if (avatarPrefab != null && !PrefabHasVisuals(avatarPrefab))
             {
-                _avatarAssignments[patientView] = originalAvatar.gameObject;
-                return;
+                Debug.LogWarning($"Patient avatar prefab '{avatarPrefab.name}' is missing a Renderer or Animator component.", avatarPrefab);
+                avatarPrefab = null;
             }
 
-            if (!avatarPrefab.TryGetComponent<Renderer>(out var prefabRenderer))
+            var assignment = new AvatarAssignment
             {
-                prefabRenderer = avatarPrefab.GetComponentInChildren<Renderer>();
+                Prefab = avatarPrefab != null ? avatarPrefab : existingAvatar != null ? existingAvatar.gameObject : null,
+                Instance = existingAvatar != null ? existingAvatar.gameObject : null
+            };
+
+            if (avatarPrefab != null)
+            {
+                var avatarInstance = Instantiate(avatarPrefab, avatarAnchor, false);
+                assignment.Instance = avatarInstance;
+
+                DestroyExistingAvatarChildren(avatarAnchor, avatarInstance.transform);
             }
 
-            if (prefabRenderer == null)
-            {
-                Debug.LogWarning($"Patient avatar prefab '{avatarPrefab.name}' is missing a Renderer component.", avatarPrefab);
-                _avatarAssignments[patientView] = originalAvatar.gameObject;
-                return;
-            }
-
-            var parent = originalAvatar.parent;
-            var siblingIndex = originalAvatar.GetSiblingIndex();
-            var localPosition = originalAvatar.localPosition;
-            var localRotation = originalAvatar.localRotation;
-            var localScale = originalAvatar.localScale;
-
-            var avatarInstance = Instantiate(avatarPrefab, parent, false);
-            var instanceTransform = avatarInstance.transform;
-            instanceTransform.SetSiblingIndex(siblingIndex);
-            instanceTransform.localPosition = localPosition;
-            instanceTransform.localRotation = localRotation;
-            instanceTransform.localScale = localScale;
-
-            _avatarAssignments[patientView] = avatarPrefab;
-
-            Destroy(originalAvatar.gameObject);
+            _avatarAssignments[patientView] = assignment;
         }
 
-        private Transform FindAvatarMesh(PatientView patientView)
+        private Transform FindAvatarRoot(PatientView patientView)
         {
             if (patientView == null)
             {
                 return null;
             }
 
-            return FindMeshChildRecursive(patientView.AvatarRoot);
+            return FindAvatarRoot(patientView.AvatarAnchor);
         }
 
-        private Transform FindMeshChildRecursive(Transform parent)
+        private Transform FindAvatarRoot(Transform parent)
         {
             if (parent == null)
             {
                 return null;
             }
 
-            if (parent.TryGetComponent<SkinnedMeshRenderer>(out _) || parent.TryGetComponent<Renderer>(out _))
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                var child = parent.GetChild(i);
+                if (ContainsAvatarVisuals(child))
+                {
+                    return child;
+                }
+            }
+
+            if (ContainsAvatarVisuals(parent))
             {
                 return parent;
             }
 
-            for (int i = 0; i < parent.childCount; i++)
+            return null;
+        }
+
+        private bool ContainsAvatarVisuals(Transform target)
+        {
+            if (target == null)
             {
-                var child = parent.GetChild(i);
-                var found = FindMeshChildRecursive(child);
-                if (found != null)
-                {
-                    return found;
-                }
+                return false;
             }
 
-            return null;
+            if (target.TryGetComponent<Animator>(out _))
+            {
+                return true;
+            }
+
+            return target.GetComponentInChildren<Renderer>() != null;
+        }
+
+        private bool PrefabHasVisuals(GameObject avatarPrefab)
+        {
+            if (avatarPrefab == null)
+            {
+                return false;
+            }
+
+            return avatarPrefab.GetComponentInChildren<Renderer>() != null || avatarPrefab.GetComponentInChildren<Animator>() != null;
+        }
+
+        private void DestroyExistingAvatarChildren(Transform anchor, Transform replacement)
+        {
+            if (anchor == null)
+            {
+                return;
+            }
+
+            for (int i = anchor.childCount - 1; i >= 0; i--)
+            {
+                var child = anchor.GetChild(i);
+                if (child == replacement)
+                {
+                    continue;
+                }
+
+                Destroy(child.gameObject);
+            }
         }
 
         private GameObject GetRandomAvatar()
@@ -331,6 +362,34 @@ namespace MedMania.Presentation.Views.Patients
 
             int index = UnityEngine.Random.Range(0, _patientAvatars.Length);
             return _patientAvatars[index];
+        }
+
+        private AvatarAssignment GetAvatarAssignment(PatientView view)
+        {
+            if (view == null)
+            {
+                return null;
+            }
+
+            if (_avatarAssignments.TryGetValue(view, out var assignment))
+            {
+                return assignment;
+            }
+
+            var avatarRoot = FindAvatarRoot(view);
+            if (avatarRoot == null)
+            {
+                return null;
+            }
+
+            assignment = new AvatarAssignment
+            {
+                Prefab = avatarRoot.gameObject,
+                Instance = avatarRoot.gameObject
+            };
+
+            _avatarAssignments[view] = assignment;
+            return assignment;
         }
 
         private void RegisterPatientAvatar(PatientView view, IPatient patient)
@@ -346,15 +405,8 @@ namespace MedMania.Presentation.Views.Patients
                 return;
             }
 
-            if (!_avatarAssignments.TryGetValue(view, out var avatarPrefab) || avatarPrefab == null)
-            {
-                var fallback = FindAvatarMesh(view);
-                avatarPrefab = fallback != null ? fallback.gameObject : null;
-                if (avatarPrefab != null)
-                {
-                    _avatarAssignments[view] = avatarPrefab;
-                }
-            }
+            var assignment = GetAvatarAssignment(view);
+            var avatarPrefab = assignment?.Prefab ?? assignment?.Instance;
 
             if (avatarPrefab == null)
             {

@@ -199,9 +199,41 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3144701386712437387}
+  - {fileID: 4284210526315789473}
   - {fileID: 2281627835960798804}
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1842105263157894736
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4284210526315789473}
+  m_Layer: 0
+  m_Name: Avatar Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4284210526315789473
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842105263157894736}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3144701386712437387}
+  m_Father: {fileID: 5063393749583265104}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1372470408068993547
 MonoBehaviour:
@@ -213,10 +245,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 392a6640cd04120409480408b3d9b389, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: MedMania.Presentation.Views::MedMania.Presentation.Views.Patients.PatientView
   _displayName: Patient
   _disease: {fileID: 11400000, guid: 46584d558d1ada649a0ef1630e7293bf, type: 2}
+  _avatarRoot: {fileID: 4284210526315789473}
+  _avatarAnchor: {fileID: 4284210526315789473}
   _patientReady:
     m_PersistentCalls:
       m_Calls: []
@@ -255,7 +289,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 5063393749583265104}
+    m_TransformParent: {fileID: 4284210526315789473}
     m_Modifications:
     - target: {fileID: 1195953763891500, guid: 7a10870bd54d256438311b8338d227d2, type: 3}
       propertyPath: m_Name
