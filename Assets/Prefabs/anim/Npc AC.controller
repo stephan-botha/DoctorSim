@@ -63,7 +63,7 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 6638970941276697146}
-    m_Position: {x: 547.64703, y: 140.78432, z: 0}
+    m_Position: {x: 400, y: 100, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 8560763307593660416}
     m_Position: {x: 680, y: 290, z: 0}
@@ -72,7 +72,7 @@ AnimatorStateMachine:
     m_Position: {x: 350, y: 400, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -5026097618147582558}
-    m_Position: {x: 140, y: 290, z: 0}
+    m_Position: {x: 140, y: 260, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -141,7 +141,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Barbarian AC
+  m_Name: Npc AC
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: Speed

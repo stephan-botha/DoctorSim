@@ -6,7 +6,8 @@ public class NpcController : MonoBehaviour
     [Header("Movement (optional)")]
     public Rigidbody rb;              // Or CharacterController / custom movement
     public float maxSitSpeed = 0.2f;  // How slow we must be to allow sitting
-
+    public bool startSitting = false;
+    
     private Animator _anim;
     private static readonly int IsSittingHash = Animator.StringToHash("IsSitting");
     private static readonly int SpeedHash     = Animator.StringToHash("Speed");
@@ -16,6 +17,7 @@ public class NpcController : MonoBehaviour
         _anim = GetComponent<Animator>();
         if (rb == null)
             rb = GetComponent<Rigidbody>();
+        if (startSitting) Sit();
     }
 
     private void Update()
