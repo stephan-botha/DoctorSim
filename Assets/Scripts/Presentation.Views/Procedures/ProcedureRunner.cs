@@ -26,6 +26,7 @@ namespace MedMania.Presentation.Views.Procedures
         [SerializeField] private UnityEvent<IPatient, IProcedureDef> _onDomainPatientCompleted = new();
         [SerializeField] private UnityEvent<Patients.PatientView> _onPatientReset = new();
         [SerializeField] private UnityEvent<Transform> _onInteractionAnchorResolved = new();
+        [SerializeField] private Camera _targetingCamera;
 
         private IGameTimer _timer;
         private System.IDisposable _activeRun;
@@ -121,6 +122,11 @@ namespace MedMania.Presentation.Views.Procedures
             return equipment == _activeEquipmentDef;
         }
 
+        public void ResetCachedTarget()
+        {
+            _targetResolver.ResetCachedTarget();
+        }
+
         public void TryRunNearby(IProcedureDef procedure)
         {
             if (procedure == null)
@@ -134,7 +140,9 @@ namespace MedMania.Presentation.Views.Procedures
                 return;
             }
 
-            if (!_targetResolver.TryResolve(procedure, out var patient, out var equipmentView, out var equipmentDef, out var interactionAnchor))
+            var targetingRay = TryBuildTargetingRay(out var rayOrigin, out var rayDirection);
+
+            if (!_targetResolver.TryResolve(procedure, targetingRay ? rayOrigin : Vector3.zero, targetingRay ? rayDirection : Vector3.zero, out var patient, out var equipmentView, out var equipmentDef, out var interactionAnchor))
             {
                 return;
             }
@@ -169,12 +177,15 @@ namespace MedMania.Presentation.Views.Procedures
                 return;
             }
 
-            if (!_targetResolver.IsTargetStillValid(_activePatient, _activeEquipmentView, _activeEquipmentDef, _activeProcedure, out var anchor))
+            if (!_targetResolver.IsCachedTargetStillValid(_activeProcedure, out var patient, out var equipmentView, out var equipmentDef, out var anchor))
             {
                 CancelActiveRun();
                 return;
             }
 
+            _activePatient = patient;
+            _activeEquipmentView = equipmentView;
+            _activeEquipmentDef = equipmentDef;
             _activeInteractionAnchor = anchor;
 
             if (_progressTracker.IsRunning && _progressTracker.HasDuration)
@@ -225,6 +236,23 @@ namespace MedMania.Presentation.Views.Procedures
             _activeEquipmentDef = null;
             _activeInteractionAnchor = null;
             _progressTracker.Stop();
+            _targetResolver.ResetCachedTarget();
+        }
+
+        private bool TryBuildTargetingRay(out Vector3 origin, out Vector3 direction)
+        {
+            var camera = _targetingCamera != null ? _targetingCamera : Camera.main;
+            if (camera == null)
+            {
+                origin = Vector3.zero;
+                direction = Vector3.zero;
+                return false;
+            }
+
+            var cameraTransform = camera.transform;
+            origin = cameraTransform.position;
+            direction = cameraTransform.forward;
+            return true;
         }
     }
 }

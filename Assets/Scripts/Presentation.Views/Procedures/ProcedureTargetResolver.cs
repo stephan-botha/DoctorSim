@@ -12,6 +12,13 @@ namespace MedMania.Presentation.Views.Procedures
     {
         private readonly Transform _origin;
         private float _range;
+        private Patients.PatientView _cachedPatient;
+        private EquipmentView _cachedEquipmentView;
+        private IEquipmentDef _cachedEquipmentDef;
+        private IProcedureDef _cachedProcedure;
+        private Transform _cachedAnchor;
+
+        private static readonly int s_InteractionLayer = LayerMask.NameToLayer("Interaction");
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private static bool s_GcAllocationLogged;
@@ -28,8 +35,10 @@ namespace MedMania.Presentation.Views.Procedures
             _range = range;
         }
 
-        public bool TryResolve(IProcedureDef procedure, out Patients.PatientView patient, out EquipmentView equipmentView, out IEquipmentDef equipmentDef, out Transform interactionAnchor)
+        public bool TryResolve(IProcedureDef procedure, Vector3 rayOrigin, Vector3 rayDirection, out Patients.PatientView patient, out EquipmentView equipmentView, out IEquipmentDef equipmentDef, out Transform interactionAnchor)
         {
+            ResetCachedTarget();
+
             patient = null;
             equipmentView = null;
             equipmentDef = null;
@@ -43,17 +52,35 @@ namespace MedMania.Presentation.Views.Procedures
             var requiredEquipment = procedure.RequiredEquipment;
             if (requiredEquipment != null)
             {
-                return TryResolveEquipmentTarget(requiredEquipment, out patient, out equipmentView, out equipmentDef, out interactionAnchor);
+                if (TryResolveEquipmentTarget(requiredEquipment, out patient, out equipmentView, out equipmentDef, out interactionAnchor))
+                {
+                    CacheResolvedTarget(patient, procedure, equipmentView, equipmentDef, interactionAnchor);
+                    return true;
+                }
+
+                return false;
             }
 
-            patient = FindClosestPatient();
-            interactionAnchor = patient != null ? ResolvePatientAnchor(patient, procedure) : null;
-            return patient != null;
+            if (!TryResolvePatientTarget(procedure, rayOrigin, rayDirection, out patient, out interactionAnchor))
+            {
+                return false;
+            }
+
+            CacheResolvedTarget(patient, procedure, null, null, interactionAnchor);
+            return true;
         }
 
-        public bool IsTargetStillValid(Patients.PatientView patient, EquipmentView equipmentView, IEquipmentDef equipmentDef, IProcedureDef procedure, out Transform interactionAnchor)
+        public bool IsCachedTargetStillValid(IProcedureDef procedure, out Patients.PatientView patient, out EquipmentView equipmentView, out IEquipmentDef equipmentDef, out Transform interactionAnchor)
         {
+            patient = _cachedPatient;
+            equipmentView = _cachedEquipmentView;
+            equipmentDef = _cachedEquipmentDef;
             interactionAnchor = null;
+
+            if (procedure == null || _cachedProcedure != procedure)
+            {
+                return false;
+            }
 
             if (equipmentView != null)
             {
@@ -76,8 +103,17 @@ namespace MedMania.Presentation.Views.Procedures
                 return false;
             }
 
-            interactionAnchor = ResolvePatientAnchor(patient, procedure);
+            interactionAnchor = _cachedAnchor != null ? _cachedAnchor : ResolvePatientAnchor(patient, procedure);
             return IsWithinRange(interactionAnchor);
+        }
+
+        public void ResetCachedTarget()
+        {
+            _cachedPatient = null;
+            _cachedEquipmentView = null;
+            _cachedEquipmentDef = null;
+            _cachedProcedure = null;
+            _cachedAnchor = null;
         }
 
         private bool TryResolveEquipmentTarget(IEquipmentDef requiredEquipment, out Patients.PatientView patient, out EquipmentView equipmentView, out IEquipmentDef equipmentDef, out Transform interactionAnchor)
@@ -137,6 +173,79 @@ namespace MedMania.Presentation.Views.Procedures
             equipmentDef = bestDef;
             interactionAnchor = ResolveAnchor(bestView);
             return true;
+        }
+
+        private bool TryResolvePatientTarget(IProcedureDef procedure, Vector3 rayOrigin, Vector3 rayDirection, out Patients.PatientView patient, out Transform interactionAnchor)
+        {
+            patient = null;
+            interactionAnchor = null;
+
+            var hasRay = rayDirection.sqrMagnitude > 0.0001f;
+            if (hasRay)
+            {
+                var direction = rayDirection.normalized;
+                var ray = new Ray(rayOrigin, direction);
+                var layerMask = s_InteractionLayer >= 0 ? 1 << s_InteractionLayer : Physics.DefaultRaycastLayers;
+
+                if (Physics.Raycast(ray, out var hit, _range, layerMask, QueryTriggerInteraction.Ignore))
+                {
+                    patient = hit.collider.GetComponentInParent<Patients.PatientView>();
+                    if (patient != null)
+                    {
+                        interactionAnchor = ResolveHitAnchor(hit.transform, patient, procedure);
+                        if (interactionAnchor != null && IsWithinRange(interactionAnchor))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            patient = FindClosestPatient();
+            interactionAnchor = patient != null ? ResolvePatientAnchor(patient, procedure) : null;
+            return patient != null && interactionAnchor != null;
+        }
+
+        private Transform ResolveHitAnchor(Transform hitTransform, Patients.PatientView patient, IProcedureDef requestedProcedure)
+        {
+            if (Patients.PatientProcedureTargets.TryGetTargets(patient, out var targets))
+            {
+                var anchors = targets.Anchors;
+                for (int i = 0; i < anchors.Count; i++)
+                {
+                    var entry = anchors[i];
+                    var anchor = entry.Anchor;
+                    if (anchor == null)
+                    {
+                        continue;
+                    }
+
+                    if (hitTransform == anchor || hitTransform.IsChildOf(anchor))
+                    {
+                        var mappedProcedure = entry.Procedure;
+                        if (mappedProcedure != null && mappedProcedure != requestedProcedure)
+                        {
+                            return null;
+                        }
+
+                        _cachedAnchor = anchor;
+                        return anchor;
+                    }
+                }
+            }
+
+            var anchorFallback = ResolvePatientAnchor(patient, requestedProcedure);
+            _cachedAnchor = anchorFallback;
+            return anchorFallback;
+        }
+
+        private void CacheResolvedTarget(Patients.PatientView patient, IProcedureDef procedure, EquipmentView equipmentView, IEquipmentDef equipmentDef, Transform interactionAnchor)
+        {
+            _cachedPatient = patient;
+            _cachedProcedure = procedure;
+            _cachedEquipmentView = equipmentView;
+            _cachedEquipmentDef = equipmentDef;
+            _cachedAnchor = interactionAnchor;
         }
 
         private Patients.PatientView FindClosestPatient()
