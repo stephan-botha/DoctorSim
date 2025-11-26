@@ -9,11 +9,12 @@ using MedMania.Core.Services.Timing;
 using MedMania.Core.Services;
 using MedMania.Core.Domain.Inventory;
 using MedMania.Core.Domain.Patients;
+using MedMania.Presentation.Input.Staff;
 using MedMania.Presentation.Views.Inventory;
 
 namespace MedMania.Presentation.Views.Procedures
 {
-    public sealed class ProcedureRunner : MonoBehaviour, IProcedureContext
+    public sealed class ProcedureRunner : MonoBehaviour, IProcedureContext, IProcedureRunInputContext
     {
         [SerializeField] private float _range = 1.5f;
         [SerializeField] private MonoBehaviour _performerSource;
@@ -39,6 +40,8 @@ namespace MedMania.Presentation.Views.Procedures
         private ProcedureProgressTracker _progressTracker;
         private ProcedureTargetResolver _targetResolver;
         private ProcedureRunEvents _events;
+        private event System.Action<IProcedureDef> _runStarted;
+        private event System.Action<IProcedureDef> _runCompleted;
 
         public UnityEvent<IProcedureDef> onStarted => _onStarted;
         public UnityEvent<float> onProgress => _onProgress;
@@ -50,6 +53,19 @@ namespace MedMania.Presentation.Views.Procedures
         public UnityEvent<Patients.PatientView> onPatientReset => _onPatientReset;
         public UnityEvent<Transform> onInteractionAnchorResolved => _onInteractionAnchorResolved;
         public Transform ActiveInteractionAnchor => _activeInteractionAnchor;
+        public bool HasActiveRun => _activeRun != null;
+
+        event System.Action<IProcedureDef> IProcedureRunInputContext.RunStarted
+        {
+            add => _runStarted += value;
+            remove => _runStarted -= value;
+        }
+
+        event System.Action<IProcedureDef> IProcedureRunInputContext.RunCompleted
+        {
+            add => _runCompleted += value;
+            remove => _runCompleted -= value;
+        }
 
         private void Awake()
         {
@@ -120,6 +136,30 @@ namespace MedMania.Presentation.Views.Procedures
         public bool IsEquipmentAvailable(IEquipmentDef equipment)
         {
             return equipment == _activeEquipmentDef;
+        }
+
+        public bool TryValidateTarget(IProcedureDef procedure, out Transform interactionAnchor)
+        {
+            interactionAnchor = null;
+
+            var hasRay = TryBuildTargetingRay(out var rayOrigin, out var rayDirection);
+            if (!_targetResolver.TryResolve(procedure, hasRay ? rayOrigin : Vector3.zero, hasRay ? rayDirection : Vector3.zero, out _, out _, out _, out interactionAnchor))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryCancelActiveRun()
+        {
+            if (_activeRun == null)
+            {
+                return false;
+            }
+
+            CancelActiveRun();
+            return true;
         }
 
         public void ResetCachedTarget()
@@ -201,6 +241,7 @@ namespace MedMania.Presentation.Views.Procedures
             var patient = _activePatient;
 
             _events.NotifyStarted(procedure, initialProgress, patient, _activeInteractionAnchor);
+            _runStarted?.Invoke(procedure);
         }
 
         private void HandleRunCompleted(IProcedureDef procedure)
@@ -209,11 +250,13 @@ namespace MedMania.Presentation.Views.Procedures
 
             _events.NotifyCompleted(procedure, patient);
             _events.ClearInteractionAnchor();
+            _runCompleted?.Invoke(procedure);
             ResetActiveRunState();
         }
 
         private void CancelActiveRun()
         {
+            var procedure = _activeProcedure;
             var run = _activeRun;
             var patient = _activePatient;
 
@@ -224,6 +267,10 @@ namespace MedMania.Presentation.Views.Procedures
             }
 
             _events.ClearInteractionAnchor();
+            if (procedure != null)
+            {
+                _runCompleted?.Invoke(procedure);
+            }
             ResetActiveRunState();
         }
 
