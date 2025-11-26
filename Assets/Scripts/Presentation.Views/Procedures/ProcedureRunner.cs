@@ -169,7 +169,7 @@ namespace MedMania.Presentation.Views.Procedures
                 return;
             }
 
-            if (!_targetResolver.IsTargetStillValid(_activePatient, _activeEquipmentView, _activeEquipmentDef, _activeProcedure, out var anchor))
+            if (!_targetResolver.IsTargetStillValid(_activePatient, _activeEquipmentView, _activeEquipmentDef, out var anchor))
             {
                 CancelActiveRun();
                 return;

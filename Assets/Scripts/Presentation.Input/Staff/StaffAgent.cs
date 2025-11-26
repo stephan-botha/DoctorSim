@@ -46,8 +46,6 @@ namespace MedMania.Presentation.Input.Staff
         private IProcedureStation _cachedStation;
 
         private ICarrySlot _hands;
-        private bool _procedureHoldActive;
-        private bool _raycastConsumed;
 
         public IProcedureDef HeldProcedure => _heldProcedure;
         public IProcedureStation CurrentStation => _cachedStation;
@@ -87,12 +85,6 @@ namespace MedMania.Presentation.Input.Staff
 
             RefreshFocusedSlot();
             UpdateHeldProcedure();
-
-            if (_procedureHoldActive && _heldProcedure == null)
-            {
-                CancelProcedureHold();
-            }
-
             UpdateAnimator();
         }
 
@@ -108,7 +100,7 @@ namespace MedMania.Presentation.Input.Staff
 
         private void OnEnable()
         {
-            BindInteractInput();
+            BindInput(_interactAction, OnInteractPerformed);
             EnableAction(_moveAction);
         }
 
@@ -116,8 +108,7 @@ namespace MedMania.Presentation.Input.Staff
         {
             _focusedSlot = null;
             _slotHighlight.Clear();
-            CancelProcedureHold();
-            UnbindInteractInput();
+            UnbindInput(_interactAction, OnInteractPerformed);
             DisableAction(_moveAction);
             DisableAction(_interactAction);
         }
@@ -577,115 +568,14 @@ namespace MedMania.Presentation.Input.Staff
             _slotHighlight.Dispose();
         }
 
-        private void OnInteractStarted(InputAction.CallbackContext _)
-        {
-            _raycastConsumed = false;
-
-            TryBeginProcedureHold();
-        }
-
         private void OnInteractPerformed(InputAction.CallbackContext _)
         {
-            if (_procedureHoldActive)
+            if (TryRequestProcedure())
             {
                 return;
             }
 
             HandleCarryToggle();
-        }
-
-        private void OnInteractCanceled(InputAction.CallbackContext _)
-        {
-            CancelProcedureHold();
-        }
-
-        private bool TryBeginProcedureHold()
-        {
-            if (_raycastConsumed)
-            {
-                return _procedureHoldActive;
-            }
-
-            _raycastConsumed = true;
-
-            if (_procedureHoldActive)
-            {
-                return true;
-            }
-
-            if (_heldProcedure == null)
-            {
-                return false;
-            }
-
-            if (!TryRaycastProcedureTarget(out var anchor))
-            {
-                return false;
-            }
-
-            if (TryRequestProcedure())
-            {
-                _procedureHoldActive = true;
-                return true;
-            }
-
-            if (anchor == null)
-            {
-                return false;
-            }
-
-            _procedureHoldActive = true;
-            _performRequested?.Invoke(_heldProcedure);
-            _performRequestedHandlers?.Invoke(_heldProcedure);
-            return true;
-        }
-
-        private bool TryRaycastProcedureTarget(out Transform anchor)
-        {
-            anchor = null;
-
-            var camera = ResolveCamera();
-            if (camera == null)
-            {
-                return false;
-            }
-
-            var procedure = _heldProcedure;
-            if (procedure == null)
-            {
-                return false;
-            }
-
-            var ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (!Physics.Raycast(ray, out var hit, _interactionRadius, _interactionMask, QueryTriggerInteraction.Collide))
-            {
-                return false;
-            }
-
-            var provider = hit.collider.GetComponentInParent<IProcedureTargetProvider>();
-            if (provider == null)
-            {
-                return false;
-            }
-
-            if (!provider.TryGetTarget(hit.collider, procedure, out anchor) || anchor == null)
-            {
-                return false;
-            }
-
-            return Vector3.Distance(transform.position, anchor.position) <= _interactionRadius;
-        }
-
-        private void CancelProcedureHold()
-        {
-            if (_procedureHoldActive)
-            {
-                _performRequested?.Invoke(null);
-                _performRequestedHandlers?.Invoke(null);
-            }
-
-            _procedureHoldActive = false;
-            _raycastConsumed = false;
         }
 
         private bool TryRequestProcedure()
@@ -700,31 +590,37 @@ namespace MedMania.Presentation.Input.Staff
             return true;
         }
 
-        private void BindInteractInput()
+        private void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
         {
-            var action = _interactAction != null ? _interactAction.action : null;
+            if (actionRef == null || callback == null)
+            {
+                return;
+            }
+
+            var action = actionRef.action;
             if (action == null)
             {
                 return;
             }
 
-            action.started += OnInteractStarted;
-            action.performed += OnInteractPerformed;
-            action.canceled += OnInteractCanceled;
-            EnableAction(_interactAction);
+            action.performed += callback;
+            EnableAction(actionRef);
         }
 
-        private void UnbindInteractInput()
+        private void UnbindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
         {
-            var action = _interactAction != null ? _interactAction.action : null;
+            if (actionRef == null || callback == null)
+            {
+                return;
+            }
+
+            var action = actionRef.action;
             if (action == null)
             {
                 return;
             }
 
-            action.started -= OnInteractStarted;
-            action.performed -= OnInteractPerformed;
-            action.canceled -= OnInteractCanceled;
+            action.performed -= callback;
         }
 
         private static void EnableAction(InputActionReference actionRef)
