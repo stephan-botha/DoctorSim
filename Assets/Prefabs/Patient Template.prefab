@@ -64,6 +64,91 @@ Transform:
   - {fileID: 6598878819961296146}
   m_Father: {fileID: 5063393749583265104}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2544059953878987889
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3949167044932231932}
+  m_Layer: 0
+  m_Name: ProcedureTargets
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3949167044932231932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2544059953878987889}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7727787565812074689}
+  m_Father: {fileID: 5063393749583265104}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2795199602907681006
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7727787565812074689}
+  - component: {fileID: 362854630473943410}
+  m_Layer: 0
+  m_Name: Mouth
+  m_TagString: Untagged
+  m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7727787565812074689
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795199602907681006}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 1.177, z: 0.284}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3949167044932231932}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!65 &362854630473943410
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795199602907681006}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.05, y: 0.07, z: 0.13}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4012345678901234567
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,6 +296,7 @@ GameObject:
   - component: {fileID: 1372470408068993547}
   - component: {fileID: 7455932712506943832}
   - component: {fileID: 5623456789012345678}
+  - component: {fileID: 7402740933108726865}
   m_Layer: 0
   m_Name: Patient Template
   m_TagString: Untagged
@@ -233,6 +319,7 @@ Transform:
   m_Children:
   - {fileID: 4284210526315789473}
   - {fileID: 2281627835960798804}
+  - {fileID: 3949167044932231932}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1372470408068993547
@@ -283,6 +370,22 @@ MonoBehaviour:
   _fillImage: {fileID: 4301234567890123456}
   _billboardToCamera: 1
   _hideOnAwake: 1
+--- !u!114 &7402740933108726865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6008132744567074621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b35e3406c324f1e9c0b2f927d616c08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MedMania.Presentation.Views::MedMania.Presentation.Views.Patients.PatientProcedureTargets
+  _targets:
+  - _procedure: {fileID: 11400000, guid: e3db101153fe2b4439c7a38afd933faf, type: 2}
+    _target: {fileID: 7727787565812074689}
+    _collider: {fileID: 362854630473943410}
 --- !u!1001 &4522972227501432218
 PrefabInstance:
   m_ObjectHideFlags: 0

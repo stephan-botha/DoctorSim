@@ -48,6 +48,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: MedMania.Presentation.Views::MedMania.Presentation.Views.Inventory.ToolView
   _tool: {fileID: 11400000, guid: e544b4431ddf8fc47b9eb64ead320433, type: 2}
   _procedure: {fileID: 11400000, guid: e3db101153fe2b4439c7a38afd933faf, type: 2}
+  _procedureRunner: {fileID: 0}
+  _parentConstraint: {fileID: 1288913056322133914}
+  _attachLerpSpeed: 8
+  _detachLerpSpeed: 12
 --- !u!1773428102 &1288913056322133914
 ParentConstraint:
   m_ObjectHideFlags: 0
