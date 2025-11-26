@@ -40,6 +40,7 @@ namespace MedMania.Presentation.Views.Procedures
         private ProcedureProgressTracker _progressTracker;
         private ProcedureTargetResolver _targetResolver;
         private ProcedureRunEvents _events;
+        private bool _isHoldActive;
         private event System.Action<IProcedureDef> _runStarted;
         private event System.Action<IProcedureDef> _runCompleted;
 
@@ -160,6 +161,33 @@ namespace MedMania.Presentation.Views.Procedures
 
             CancelActiveRun();
             return true;
+        }
+
+        public void SetHoldActive(bool isHeld)
+        {
+            if (_isHoldActive == isHeld)
+            {
+                return;
+            }
+
+            _isHoldActive = isHeld;
+
+            if (_isHoldActive)
+            {
+                return;
+            }
+
+            if (_activeRun != null)
+            {
+                CancelActiveRun();
+                return;
+            }
+
+            if (_activeInteractionAnchor != null)
+            {
+                _events.ClearInteractionAnchor();
+                ResetActiveRunState();
+            }
         }
 
         public void ResetCachedTarget()

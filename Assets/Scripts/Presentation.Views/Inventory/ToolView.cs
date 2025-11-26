@@ -2,6 +2,7 @@
 // ToolView.cs
 // Responsibility: Scene representation for tools, exposing carry + procedure metadata.
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using MedMania.Core.Data.ScriptableObjects;
@@ -68,7 +69,7 @@ namespace MedMania.Presentation.Views.Inventory
             if (anchor == null)
             {
                 _parentConstraint.weight = 0f;
-                _parentConstraint.SetSources(System.Array.Empty<ConstraintSource>());
+                _parentConstraint.SetSources(new List<ConstraintSource>());
                 _parentConstraint.constraintActive = false;
                 _hasAnchor = false;
                 return;
@@ -77,7 +78,7 @@ namespace MedMania.Presentation.Views.Inventory
             var source = new ConstraintSource { sourceTransform = anchor, weight = 1f };
             if (!_hasAnchor || _parentConstraint.sourceCount == 0)
             {
-                _parentConstraint.SetSources(new[] { source });
+                _parentConstraint.SetSources(new List<ConstraintSource> { source });
             }
             else
             {
