@@ -24,7 +24,8 @@ namespace MedMania.Presentation.Views.Patients
         }
 
         private static readonly Dictionary<PatientView, PatientProcedureTargets> s_Registry = new();
-        private static readonly int s_InteractionLayer = LayerMask.NameToLayer("Interaction");
+
+        private int _interactionLayer = -1;
 
         [SerializeField] private PatientView _patient;
         [SerializeField] private ProcedureAnchor[] _anchors = Array.Empty<ProcedureAnchor>();
@@ -132,11 +133,25 @@ namespace MedMania.Presentation.Views.Patients
                 {
                     Debug.LogWarning($"Anchor {anchor.name} on {name} requires a {nameof(Collider)} for interaction raycasts.", anchor);
                 }
-                else if (s_InteractionLayer >= 0 && collider.gameObject.layer != s_InteractionLayer)
+                else
                 {
-                    Debug.LogWarning($"Anchor {anchor.name} on {name} should be on the Interaction layer for raycasts.", anchor);
+                    var interactionLayer = GetInteractionLayer();
+                    if (interactionLayer >= 0 && collider.gameObject.layer != interactionLayer)
+                    {
+                        Debug.LogWarning($"Anchor {anchor.name} on {name} should be on the Interaction layer for raycasts.", anchor);
+                    }
                 }
             }
+        }
+
+        private int GetInteractionLayer()
+        {
+            if (_interactionLayer < 0)
+            {
+                _interactionLayer = LayerMask.NameToLayer("Interaction");
+            }
+
+            return _interactionLayer;
         }
     }
 }
