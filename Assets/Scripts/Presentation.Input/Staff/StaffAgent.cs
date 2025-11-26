@@ -3,6 +3,7 @@
 // Responsibility: handle staff interaction inputs (carry/perform) and slot highlighting
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -26,8 +27,12 @@ namespace MedMania.Presentation.Input.Staff
         [SerializeField] private string _carryingParam = "Carrying";
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField, FormerlySerializedAs("_carryAction")] private InputActionReference _interactAction;
+        [SerializeField] private InputActionReference _procedurePressAction;
+        [SerializeField] private InputActionReference _procedureHoldAction;
+        [SerializeField] private InputActionReference _procedureReleaseAction;
         [SerializeField, FormerlySerializedAs("_slotHighlightPrefab")] private GameObject _slotHighlightPrefab;
         [SerializeField] private Camera _viewCamera;
+        [SerializeField] private float _procedureWeightLerpSpeed = 8f;
         [NonSerialized] private IProcedureDef _heldProcedure;
         [SerializeField, Tooltip("Runtime debug view of the currently held procedure.")]
         private UnityEngine.Object _heldProcedureDebug;
@@ -44,6 +49,10 @@ namespace MedMania.Presentation.Input.Staff
         private event System.Action<IProcedureDef> _performRequestedHandlers;
         private ICarrySlot _focusedSlot;
         private IProcedureStation _cachedStation;
+        private IProcedureRunInputContext _activeProcedureContext;
+        private IProcedureAnchorHandler _activeAnchorHandler;
+        private Coroutine _procedureWeightRoutine;
+        private float _currentConstraintWeight;
 
         private ICarrySlot _hands;
 
@@ -101,6 +110,9 @@ namespace MedMania.Presentation.Input.Staff
         private void OnEnable()
         {
             BindInput(_interactAction, OnInteractPerformed);
+            BindInput(_procedurePressAction, OnProcedurePressPerformed);
+            BindInput(_procedureHoldAction, OnProcedureHoldPerformed);
+            BindInput(_procedureReleaseAction, OnProcedureReleasePerformed);
             EnableAction(_moveAction);
         }
 
@@ -109,8 +121,17 @@ namespace MedMania.Presentation.Input.Staff
             _focusedSlot = null;
             _slotHighlight.Clear();
             UnbindInput(_interactAction, OnInteractPerformed);
+            UnbindInput(_procedurePressAction, OnProcedurePressPerformed);
+            UnbindInput(_procedureHoldAction, OnProcedureHoldPerformed);
+            UnbindInput(_procedureReleaseAction, OnProcedureReleasePerformed);
             DisableAction(_moveAction);
             DisableAction(_interactAction);
+            DisableAction(_procedurePressAction);
+            DisableAction(_procedureHoldAction);
+            DisableAction(_procedureReleaseAction);
+            StopProcedureWeightLerp();
+            UnregisterProcedureContext();
+            _activeAnchorHandler = null;
         }
 
         private ICarrySlot ResolveSlot(Component component)
@@ -578,6 +599,52 @@ namespace MedMania.Presentation.Input.Staff
             HandleCarryToggle();
         }
 
+        private void OnProcedurePressPerformed(InputAction.CallbackContext _)
+        {
+            if (!TryPrepareProcedureRun(out var context, out var anchorHandler, out var procedure))
+            {
+                return;
+            }
+
+            if (!context.TryValidateTarget(procedure, out var anchor))
+            {
+                StartProcedureWeightLerp(anchorHandler, 0f);
+                return;
+            }
+
+            RegisterProcedureContext(context);
+            _activeAnchorHandler = anchorHandler;
+
+            anchorHandler?.ApplyInteractionAnchor(anchor);
+            StartProcedureWeightLerp(anchorHandler, 1f);
+            RequestProcedure(procedure);
+        }
+
+        private void OnProcedureHoldPerformed(InputAction.CallbackContext _)
+        {
+            if (_activeAnchorHandler != null)
+            {
+                _activeAnchorHandler.SetConstraintWeight(1f);
+                _currentConstraintWeight = 1f;
+            }
+        }
+
+        private void OnProcedureReleasePerformed(InputAction.CallbackContext _)
+        {
+            if (_activeAnchorHandler != null)
+            {
+                StartProcedureWeightLerp(_activeAnchorHandler, 0f);
+            }
+
+            if (_activeProcedureContext != null && _activeProcedureContext.HasActiveRun)
+            {
+                _activeProcedureContext.TryCancelActiveRun();
+            }
+
+            UnregisterProcedureContext();
+            _activeAnchorHandler = null;
+        }
+
         private bool TryRequestProcedure()
         {
             if (_cachedStation == null || _cachedStation.Procedure == null || _heldProcedure == null)
@@ -588,6 +655,118 @@ namespace MedMania.Presentation.Input.Staff
             _performRequested?.Invoke(_heldProcedure);
             _performRequestedHandlers?.Invoke(_heldProcedure);
             return true;
+        }
+
+        private bool TryPrepareProcedureRun(out IProcedureRunInputContext context, out IProcedureAnchorHandler anchorHandler, out IProcedureDef procedure)
+        {
+            context = null;
+            anchorHandler = null;
+            procedure = _heldProcedure;
+
+            if (procedure == null)
+            {
+                return false;
+            }
+
+            if (_hands?.Current is not Component component)
+            {
+                return false;
+            }
+
+            context = component.GetComponentInParent<IProcedureContextSource>()?.ProcedureContext;
+            anchorHandler = component.GetComponentInParent<IProcedureAnchorHandler>();
+
+            if (context == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private void RequestProcedure(IProcedureDef procedure)
+        {
+            _performRequested?.Invoke(procedure);
+            _performRequestedHandlers?.Invoke(procedure);
+        }
+
+        private void RegisterProcedureContext(IProcedureRunInputContext context)
+        {
+            if (ReferenceEquals(_activeProcedureContext, context))
+            {
+                return;
+            }
+
+            UnregisterProcedureContext();
+
+            _activeProcedureContext = context;
+            if (_activeProcedureContext != null)
+            {
+                _activeProcedureContext.RunCompleted += HandleProcedureRunCompleted;
+            }
+        }
+
+        private void UnregisterProcedureContext()
+        {
+            if (_activeProcedureContext != null)
+            {
+                _activeProcedureContext.RunCompleted -= HandleProcedureRunCompleted;
+            }
+
+            _activeProcedureContext = null;
+        }
+
+        private void HandleProcedureRunCompleted(IProcedureDef _)
+        {
+            if (_activeAnchorHandler != null)
+            {
+                StartProcedureWeightLerp(_activeAnchorHandler, 0f);
+                _activeAnchorHandler = null;
+            }
+
+            _currentConstraintWeight = 0f;
+            UnregisterProcedureContext();
+        }
+
+        private void StartProcedureWeightLerp(IProcedureAnchorHandler handler, float targetWeight)
+        {
+            if (handler == null)
+            {
+                return;
+            }
+
+            StopProcedureWeightLerp();
+            _procedureWeightRoutine = StartCoroutine(LerpProcedureWeight(handler, targetWeight));
+        }
+
+        private void StopProcedureWeightLerp()
+        {
+            if (_procedureWeightRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_procedureWeightRoutine);
+            _procedureWeightRoutine = null;
+        }
+
+        private IEnumerator LerpProcedureWeight(IProcedureAnchorHandler handler, float targetWeight)
+        {
+            float speed = _procedureWeightLerpSpeed <= 0f ? 1f : _procedureWeightLerpSpeed;
+            float current = _currentConstraintWeight;
+            targetWeight = Mathf.Clamp01(targetWeight);
+
+            while (!Mathf.Approximately(current, targetWeight))
+            {
+                current = Mathf.MoveTowards(current, targetWeight, speed * Time.deltaTime);
+                handler.SetConstraintWeight(current);
+                _currentConstraintWeight = current;
+                yield return null;
+            }
+
+            handler.SetConstraintWeight(targetWeight);
+            _currentConstraintWeight = targetWeight;
+            _procedureWeightRoutine = null;
         }
 
         private void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
