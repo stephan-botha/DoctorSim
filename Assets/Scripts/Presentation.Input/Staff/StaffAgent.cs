@@ -50,6 +50,7 @@ namespace MedMania.Presentation.Input.Staff
         private ICarrySlot _focusedSlot;
         private IProcedureStation _cachedStation;
         private IProcedureRunInputContext _activeProcedureContext;
+        private IProcedureRunInputContext _holdProcedureContext;
         private IProcedureAnchorHandler _activeAnchorHandler;
         private Coroutine _procedureWeightRoutine;
         private float _currentConstraintWeight;
@@ -130,7 +131,9 @@ namespace MedMania.Presentation.Input.Staff
             DisableAction(_procedureHoldAction);
             DisableAction(_procedureReleaseAction);
             StopProcedureWeightLerp();
+            _holdProcedureContext?.SetHoldActive(false);
             UnregisterProcedureContext();
+            _holdProcedureContext = null;
             _activeAnchorHandler = null;
         }
 
@@ -615,6 +618,9 @@ namespace MedMania.Presentation.Input.Staff
             RegisterProcedureContext(context);
             _activeAnchorHandler = anchorHandler;
 
+            _holdProcedureContext = context;
+            context.SetHoldActive(true);
+
             anchorHandler?.ApplyInteractionAnchor(anchor);
             StartProcedureWeightLerp(anchorHandler, 1f);
             RequestProcedure(procedure);
@@ -636,12 +642,11 @@ namespace MedMania.Presentation.Input.Staff
                 StartProcedureWeightLerp(_activeAnchorHandler, 0f);
             }
 
-            if (_activeProcedureContext != null && _activeProcedureContext.HasActiveRun)
-            {
-                _activeProcedureContext.TryCancelActiveRun();
-            }
+            var holdContext = _activeProcedureContext ?? _holdProcedureContext;
+            holdContext?.SetHoldActive(false);
 
             UnregisterProcedureContext();
+            _holdProcedureContext = null;
             _activeAnchorHandler = null;
         }
 
