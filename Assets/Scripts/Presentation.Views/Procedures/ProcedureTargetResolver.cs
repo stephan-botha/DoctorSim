@@ -47,11 +47,11 @@ namespace MedMania.Presentation.Views.Procedures
             }
 
             patient = FindClosestPatient();
-            interactionAnchor = patient != null ? patient.transform : null;
+            interactionAnchor = patient != null ? ResolvePatientAnchor(patient, procedure) : null;
             return patient != null;
         }
 
-        public bool IsTargetStillValid(Patients.PatientView patient, EquipmentView equipmentView, IEquipmentDef equipmentDef, out Transform interactionAnchor)
+        public bool IsTargetStillValid(Patients.PatientView patient, EquipmentView equipmentView, IEquipmentDef equipmentDef, IProcedureDef procedure, out Transform interactionAnchor)
         {
             interactionAnchor = null;
 
@@ -76,7 +76,7 @@ namespace MedMania.Presentation.Views.Procedures
                 return false;
             }
 
-            interactionAnchor = patient.transform;
+            interactionAnchor = ResolvePatientAnchor(patient, procedure);
             return IsWithinRange(interactionAnchor);
         }
 
@@ -182,6 +182,16 @@ namespace MedMania.Presentation.Views.Procedures
 #endif
 
             return best;
+        }
+
+        private Transform ResolvePatientAnchor(Patients.PatientView patient, IProcedureDef procedure)
+        {
+            if (Patients.PatientProcedureTargets.TryGetTargets(patient, out var targets))
+            {
+                return targets.ResolveAnchor(procedure);
+            }
+
+            return patient != null ? patient.transform : null;
         }
 
         private Transform ResolveAnchor(EquipmentView view)
