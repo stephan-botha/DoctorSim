@@ -13,6 +13,7 @@ namespace MedMania.Presentation.Input.Staff
         bool TryValidateTarget(IProcedureDef procedure, out Transform interactionAnchor);
         bool TryCancelActiveRun();
         bool HasActiveRun { get; }
+        void SetHoldActive(bool isHeld);
 
         event Action<IProcedureDef> RunStarted;
         event Action<IProcedureDef> RunCompleted;
