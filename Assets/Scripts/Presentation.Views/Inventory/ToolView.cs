@@ -40,7 +40,10 @@ namespace MedMania.Presentation.Views.Inventory
                 _parentConstraint = GetComponent<ParentConstraint>();
             }
 
-            ResolveRunnerFromParents();
+            if (_procedureRunner == null)
+            {
+                _procedureRunner = GetComponentInParent<ProcedureRunner>();
+            }
 
             if (_parentConstraint != null)
             {
@@ -51,7 +54,7 @@ namespace MedMania.Presentation.Views.Inventory
 
         private void OnEnable()
         {
-            ResolveRunnerFromParents();
+            BindRunner(_procedureRunner);
         }
 
         private void OnDisable()
@@ -63,17 +66,6 @@ namespace MedMania.Presentation.Views.Inventory
         private void Update()
         {
             UpdateConstraintWeight();
-        }
-
-        private void OnTransformParentChanged()
-        {
-            ResolveRunnerFromParents();
-        }
-
-        private void ResolveRunnerFromParents()
-        {
-            var runner = GetComponentInParent<ProcedureRunner>();
-            BindRunner(runner);
         }
 
         public void BindRunner(ProcedureRunner runner)
@@ -124,11 +116,20 @@ namespace MedMania.Presentation.Views.Inventory
                 return;
             }
 
+            var source = new ConstraintSource { sourceTransform = anchor, weight = 1f };
+
             if (anchor != null)
             {
-                SetOrAddConstraintSource(anchor);
-                ActivateConstraint();
-                ZeroConstraintOffsets();
+                if (_parentConstraint.sourceCount == 0)
+                {
+                    _parentConstraint.AddSource(source);
+                }
+                else
+                {
+                    _parentConstraint.SetSource(0, source);
+                }
+
+                _parentConstraint.constraintActive = true;
             }
             else
             {
@@ -136,36 +137,6 @@ namespace MedMania.Presentation.Views.Inventory
             }
 
             _targetConstraintWeight = Mathf.Clamp01(targetWeight);
-        }
-
-        private void SetOrAddConstraintSource(Transform anchor)
-        {
-            var source = new ConstraintSource { sourceTransform = anchor, weight = 1f };
-
-            if (_parentConstraint.sourceCount == 0)
-            {
-                _parentConstraint.AddSource(source);
-            }
-            else
-            {
-                _parentConstraint.SetSource(0, source);
-            }
-        }
-
-        private void ActivateConstraint()
-        {
-            _parentConstraint.constraintActive = true;
-        }
-
-        private void ZeroConstraintOffsets()
-        {
-            if (_parentConstraint.sourceCount == 0)
-            {
-                return;
-            }
-
-            _parentConstraint.SetTranslationOffset(0, Vector3.zero);
-            _parentConstraint.SetRotationOffset(0, Vector3.zero);
         }
 
         private void UpdateConstraintWeight()
