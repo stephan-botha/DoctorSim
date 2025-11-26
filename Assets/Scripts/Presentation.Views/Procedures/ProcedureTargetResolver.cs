@@ -46,12 +46,10 @@ namespace MedMania.Presentation.Views.Procedures
                 return TryResolveEquipmentTarget(requiredEquipment, out patient, out equipmentView, out equipmentDef, out interactionAnchor);
             }
 
-            patient = FindClosestPatient();
-            interactionAnchor = patient != null ? patient.transform : null;
-            return patient != null;
+            return TryResolvePatientTarget(procedure, out patient, out interactionAnchor);
         }
 
-        public bool IsTargetStillValid(Patients.PatientView patient, EquipmentView equipmentView, IEquipmentDef equipmentDef, out Transform interactionAnchor)
+        public bool IsTargetStillValid(Patients.PatientView patient, EquipmentView equipmentView, IEquipmentDef equipmentDef, IProcedureDef procedure, out Transform interactionAnchor)
         {
             interactionAnchor = null;
 
@@ -76,7 +74,7 @@ namespace MedMania.Presentation.Views.Procedures
                 return false;
             }
 
-            interactionAnchor = patient.transform;
+            interactionAnchor = ResolveAnchor(patient, procedure);
             return IsWithinRange(interactionAnchor);
         }
 
@@ -139,8 +137,15 @@ namespace MedMania.Presentation.Views.Procedures
             return true;
         }
 
-        private Patients.PatientView FindClosestPatient()
+        private bool TryResolvePatientTarget(IProcedureDef procedure, out Patients.PatientView patient, out Transform interactionAnchor)
         {
+            patient = FindClosestPatient(procedure, out interactionAnchor);
+            return patient != null && interactionAnchor != null;
+        }
+
+        private Patients.PatientView FindClosestPatient(IProcedureDef procedure, out Transform anchor)
+        {
+            anchor = null;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             long allocationBefore = System.GC.GetAllocatedBytesForCurrentThread();
 #endif
@@ -155,10 +160,17 @@ namespace MedMania.Presentation.Views.Procedures
                     continue;
                 }
 
-                float d = Vector3.Distance(_origin.position, p.transform.position);
+                var resolvedAnchor = ResolveAnchor(p, procedure);
+                if (resolvedAnchor == null)
+                {
+                    continue;
+                }
+
+                float d = Vector3.Distance(_origin.position, resolvedAnchor.position);
                 if (d < bestDist && d <= _range)
                 {
                     best = p;
+                    anchor = resolvedAnchor;
                     bestDist = d;
                 }
             }
@@ -189,6 +201,16 @@ namespace MedMania.Presentation.Views.Procedures
             return view != null && view.InteractionAnchor != null
                 ? view.InteractionAnchor
                 : view != null ? view.transform : null;
+        }
+
+        private Transform ResolveAnchor(Patients.PatientView patient, IProcedureDef procedure)
+        {
+            if (patient != null && procedure != null && patient.TryGetComponent(out Patients.PatientProcedureTargets targets) && targets.TryGetTarget(procedure, out var procedureTarget))
+            {
+                return procedureTarget;
+            }
+
+            return patient != null ? patient.transform : null;
         }
 
         private bool IsWithinRange(Transform anchor)
